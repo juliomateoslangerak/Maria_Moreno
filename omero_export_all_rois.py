@@ -1,10 +1,15 @@
 import numpy as np
 import omero_toolbox as omero
 from getpass import getpass
+import sys
 from skimage import draw
 
 
 # Define variables
+USER = sys.argv[1]
+PASS = sys.argv[2]
+GROUP = sys.argv[3]
+DATASET = sys.argv[4]
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
 ROI_COMMENTS = ('PC', 'PT')
@@ -13,13 +18,13 @@ ROI_COMMENTS = ('PC', 'PT')
 
 try:
     # Open the connection to OMERO
-    conn = omero.open_connection(username=input("Username: "),
-                                 password=getpass("OMERO Password: ", None),
-                                 host=str(input('server (omero.mri.cnrs.fr): ') or HOST),
-                                 port=int(input('port (4064): ') or PORT),
-                                 group=input("Group: "))
+    conn = omero.open_connection(username=USER,
+                                 password=PASS,
+                                 host=HOST,
+                                 port=PORT,
+                                 group=GROUP)
 
-    dataset_id = int(input('Dataset ID: '))
+    dataset_id = int(DATASET)
 
     roi_filter = ROI_COMMENTS
 
