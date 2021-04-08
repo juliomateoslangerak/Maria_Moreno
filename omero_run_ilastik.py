@@ -1,8 +1,3 @@
-# TODO: Fix image namings
-# TODO: FIx channel correspondance
-# TODO: Remove iteration over two images and loading images from disk
-# TODO: rename channels to object type
-# run on 13254, 14457, 13359
 import logging
 
 import numpy as np
@@ -24,49 +19,50 @@ HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
 TEMP_DIR = '/run/media/julio/DATA/Maria/temp'
 ILASTIK_PATH = '/home/julio/Apps/ilastik-1.3.3post3-Linux/run_ilastik.sh'
-# PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/HippocampalGliosis_v1.ilp'
-PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/Neuronal_death_v2.ilp'
+PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/HippocampalGliosis_v1.ilp'
+# PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/Neuronal_death_v2.ilp'
 
 # Probability image is referring to channels in aip_image as follows:
 # (object_ch, prb_ch)
-# object_ch_match = [(0, 0),
-#                    (1, 1),
-#                    (2, 2),
-#                    ]
 object_ch_match = [(0, 0),
                    (1, 1),
+                   (2, 2),
                    ]
-# ch_bg_match = [(0, 3),
-#                (1, 3),
-#                (2, 3)]
-ch_bg_match = [(0, 2),
-               (1, 2),
+# object_ch_match = [(0, 0),
+#                    (1, 1),
+#                    ]
+ch_bg_match = [(0, 3),
+               (1, 3),
+               (2, 3)
                ]
+# ch_bg_match = [(0, 2),
+#                (1, 2),
+#                ]
 
-# ch_names = ['Microglie', 'Astrocyte', 'Neurone']
-ch_names = ['Nuclei', 'Neurons_F1B']
+ch_names = ['Microglie', 'Astrocyte', 'Neurone']
+# ch_names = ['Nuclei', 'Neurons_F1B']
 
-# segmentation_thr = [150,
-#                     150,
-#                     180,
-#                     200]
-segmentation_thr = [150,
+segmentation_thr = [180,
                     100,
+                    180,
                     200]
-# upper_correction_factors = [1,
-#                             1,
-#                             1,
-#                             1]
+# segmentation_thr = [150,
+#                     100,
+#                     200]
 upper_correction_factors = [1,
                             1,
+                            1,
                             1]
-# lower_correction_factors = [0.8,
-#                             0.8,
-#                             0.8,
+# upper_correction_factors = [1,
+#                             1,
 #                             1]
 lower_correction_factors = [0.8,
-                            0.2,
+                            0.8,
+                            0.8,
                             1]
+# lower_correction_factors = [0.8,
+#                             0.2,
+#                             1]
 
 
 def run_ilastik(ilastik_path, input_path, model_path):
