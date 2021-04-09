@@ -1,8 +1,8 @@
 import logging
 
+import argh
 import numpy as np
 import omero_toolbox as omero
-from getpass import getpass
 import subprocess
 from skimage.filters import threshold_otsu, apply_hysteresis_threshold
 from skimage.segmentation import clear_border
@@ -15,8 +15,6 @@ logging.basicConfig(level='INFO')
 logger = logging.getLogger(__name__)
 
 # Define variables
-HOST = 'omero.mri.cnrs.fr'
-PORT = 4064
 TEMP_DIR = '/home/ubuntu/temp'
 ILASTIK_PATH = '/opt/ilastik-1.3.3post3-Linux/run_ilastik.sh'
 PROJECT_PATH = './models/HippocampalGliosis_v1.ilp'
@@ -171,17 +169,17 @@ def compute_spots_properties(image, labels):
     return properties
 
 
-if __name__ == '__main__':
+def run(user, password, dataset_id, group='Hippocampal Gliosis CD3', host='omero.mri.cnrs.fr', port=4064):
     try:
         # Open the connection to OMERO
-        conn = omero.open_connection(username=input("Username: "),
-                                     password=getpass("OMERO Password: ", None),
-                                     host=str(input('server (omero.mri.cnrs.fr): ') or HOST),
-                                     port=int(input('port (4064): ') or PORT),
-                                     group=input("Group: "))
+        conn = omero.open_connection(username=user,
+                                     password=password,
+                                     host=host,
+                                     port=int(port),
+                                     group=group)
 
         # get tagged images in dataset
-        dataset_id = int(input('Dataset ID: '))
+        dataset_id = int(dataset_id)
         dataset = omero.get_dataset(conn, dataset_id)
         project = dataset.getParent()
 
@@ -336,3 +334,7 @@ if __name__ == '__main__':
     finally:
         conn.close()
         logger.info('Done')
+
+
+if __name__ == '__main__':
+    argh.dispatch_command(run)
