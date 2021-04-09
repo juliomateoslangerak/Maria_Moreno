@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # Define variables
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-TEMP_DIR = '~/temp'
+TEMP_DIR = '/home/ubuntu/temp'
 ILASTIK_PATH = '/opt/ilastik-1.3.3post3-Linux/run_ilastik.sh'
 PROJECT_PATH = './models/HippocampalGliosis_v1.ilp'
 # PROJECT_PATH = './models/Neuronal_death_v2.ilp'
