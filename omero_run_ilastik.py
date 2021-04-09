@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 # Define variables
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-TEMP_DIR = '/run/media/julio/DATA/Maria/temp'
-ILASTIK_PATH = '/home/julio/Apps/ilastik-1.3.3post3-Linux/run_ilastik.sh'
-PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/HippocampalGliosis_v1.ilp'
-# PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/Neuronal_death_v2.ilp'
+TEMP_DIR = '~/temp'
+ILASTIK_PATH = '/opt/ilastik-1.3.3post3-Linux/run_ilastik.sh'
+PROJECT_PATH = './models/HippocampalGliosis_v1.ilp'
+# PROJECT_PATH = './models/Neuronal_death_v2.ilp'
 
 # Probability image is referring to channels in aip_image as follows:
 # (object_ch, prb_ch)
