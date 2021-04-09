@@ -169,7 +169,7 @@ def compute_spots_properties(image, labels):
     return properties
 
 
-def run(user, password, dataset_id, group='Hippocampal Gliosis CD3', host='omero.mri.cnrs.fr', port=4064):
+def run(user, password, dataset, group='Hippocampal Gliosis CD3', host='omero.mri.cnrs.fr', port=4064):
     try:
         # Open the connection to OMERO
         conn = omero.open_connection(username=user,
@@ -179,7 +179,7 @@ def run(user, password, dataset_id, group='Hippocampal Gliosis CD3', host='omero
                                      group=group)
 
         # get tagged images in dataset
-        dataset_id = int(dataset_id)
+        dataset_id = int(dataset)
         dataset = omero.get_dataset(conn, dataset_id)
         project = dataset.getParent()
 
