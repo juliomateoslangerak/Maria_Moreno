@@ -23,10 +23,7 @@ logger = logging.getLogger(__name__)
 # Define variables
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-TEMP_DIR = '/run/media/julio/DATA/Maria/temp'
-ILASTIK_PATH = '/home/julio/Apps/ilastik-1.3.3post3-Linux/run_ilastik.sh'
-PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/HippocampalGliosis_v1.ilp'
-# PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/Neuronal_death_v1.ilp'
+TEMP_DIR = '/home/ubuntu/temp'
 
 # Probability image is referring to channels in aip_image as follows:
 # (object_ch, prb_ch)
@@ -68,28 +65,6 @@ lower_correction_factors = [0.8,
 # lower_correction_factors = [0.8,
 #                             0.2,
 #                             1]
-
-
-def run_ilastik(ilastik_path, input_path, model_path):
-
-    cmd = [ilastik_path,
-           '--headless',
-           f'--project={model_path}',
-           '--export_source=Probabilities',
-           '--output_format=numpy',
-           # '--output_filename_format={dataset_dir}/{nickname}_Probabilities.npy',
-           '--export_dtype=uint8',
-           # '--output_axis_order=zctyx',
-           input_path]
-    try:
-        subprocess.run(cmd, check=True, stdout=subprocess.PIPE).stdout
-    except subprocess.CalledProcessError as e:
-        print(f'Input command: {cmd}')
-        print()
-        print(f'Error: {e.output}')
-        print()
-        print(f'Command: {e.cmd}')
-        print()
 
 
 def segment_channel(channel, threshold=None, min_distance=2, remove_border=False, low_corr_factor=1, high_corr_factor=1):
@@ -184,6 +159,8 @@ if __name__ == '__main__':
                                      host=str(input('server (omero.mri.cnrs.fr): ') or HOST),
                                      port=int(input('port (4064): ') or PORT),
                                      group=input("Group: "))
+
+        conn.c.enableKeepAlive(60)
 
         # get tagged images in dataset
         dataset_id = int(input('ROIs Dataset ID: '))

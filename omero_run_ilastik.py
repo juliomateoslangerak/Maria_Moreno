@@ -178,6 +178,8 @@ def run(user, password, dataset, group='Hippocampal Gliosis CD3', host='omero.mr
                                      port=int(port),
                                      group=group)
 
+        conn.c.enableKeepAlive(60)
+
         # get tagged images in dataset
         dataset_id = int(dataset)
         dataset = omero.get_dataset(conn, dataset_id)
