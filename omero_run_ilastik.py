@@ -243,12 +243,12 @@ def run(user, password, dataset, group='Hippocampal Gliosis CD3', host='omero.mr
             # We were downloading the images without the z dimension so we have to remove it here
             # mip_data = mip_data.squeeze(axis=0)
 
-            temp_file = f'{TEMP_DIR}/{mip_image.getName()}.npy'
+            temp_file = f'{TEMP_DIR}/temp_array.npy'
             np.save(temp_file, mip_data)
 
             run_ilastik(ILASTIK_PATH, temp_file, PROJECT_PATH)
 
-            output_file = f'{TEMP_DIR}/{mip_image.getName()}_Probabilities.npy'
+            output_file = f'{TEMP_DIR}/temp_array_Probabilities.npy'
             prob_data = np.load(output_file)
 
             # Save the output back to OMERO
