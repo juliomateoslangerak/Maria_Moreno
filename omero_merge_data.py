@@ -109,6 +109,9 @@ def run(user, password, dataset, group='Hippocampal Gliosis CD3', host='omero.mr
 
                     local_file_path = os.path.join(TEMP_DIR, str(dataset_id),
                                                    f'{image.getId()}_{image_root_name}_{file_name}')
+                    with open(str(local_file_path), 'wb') as f:
+                        for chunk in ann.getFileInChunks():
+                            f.write(chunk)
 
                     if 'object_df' in file_name:
                         object_dfs[int(file_name[2])] = pd.read_csv(local_file_path)
