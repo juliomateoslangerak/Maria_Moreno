@@ -1,4 +1,5 @@
 import logging
+import argh
 
 import omero_toolbox as omero
 from omero.gateway import FileAnnotationWrapper
@@ -31,18 +32,18 @@ ch_names = ['Microglie', 'Astrocyte', 'Neurone']
 # ch_names = ['Nuclei', 'Neurons_F1B']
 
 
-if __name__ == '__main__':
+def run(user, password, dataset, group='Hippocampal Gliosis CD3', host='omero.mri.cnrs.fr', port=4064):
     try:
         # Open the connection to OMERO
-        conn = omero.open_connection(username=input("Username: "),
-                                     password=getpass("OMERO Password: ", None),
-                                     host=str(input('server (omero.mri.cnrs.fr): ') or HOST),
-                                     port=int(input('port (4064): ') or PORT),
-                                     group=input("Group: "))
+        conn = omero.open_connection(username=user,
+                                     password=password,
+                                     host=host,
+                                     port=port,
+                                     group=group)
         conn.c.enableKeepAlive(60)
 
         # get tagged images in dataset
-        dataset_id = int(input('ROIs Dataset ID: '))
+        dataset_id = int(dataset)
         dataset = omero.get_dataset(conn, dataset_id)
 
         images = dataset.listChildren()
@@ -150,3 +151,7 @@ if __name__ == '__main__':
     finally:
         conn.close()
         logger.info('Done')
+
+
+if __name__ == '__main__':
+    argh.dispatch_command(run)
