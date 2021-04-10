@@ -107,8 +107,7 @@ def run(user, password, dataset, group='Hippocampal Gliosis CD3', host='omero.mr
                 if isinstance(ann, FileAnnotationWrapper):
                     file_name = ann.getFileName()
 
-                    local_file_path = os.path.join(TEMP_DIR, str(dataset_id),
-                                                   f'{image.getId()}_{image_root_name}_{file_name}')
+                    local_file_path = os.path.join(TEMP_DIR, f'{image.getId()}_{image_root_name}_{file_name}')
                     with open(str(local_file_path), 'wb') as f:
                         for chunk in ann.getFileInChunks():
                             f.write(chunk)
