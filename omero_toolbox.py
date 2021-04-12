@@ -724,7 +724,7 @@ def _create_table(column_names, columns_descriptions, values, types=None):
         raise IndexError('Error creating table. Types and values lengths are not matching.')
     # TODO: Verify implementation of empty table creation
 
-    columns = list()
+    columns = []
     for i, (cn, cd, v) in enumerate(zip(column_names, columns_descriptions, values)):
         # Verify column names and descriptions are strings
         if not type(cn) == type(cd) == str:
@@ -733,11 +733,7 @@ def _create_table(column_names, columns_descriptions, values, types=None):
         if types is not None:
             v_type = types[i]
         else:
-            if isinstance(v[0], (list, tuple)):
-                v_type = [type(v[0][0])]
-            else:
-                v_type = type(v[0])
-
+            v_type = [type(v[0][0])] if isinstance(v[0], (list, tuple)) else type(v[0])
         # Verify that all elements in values are the same type
         # if not all(isinstance(x, v_type) for x in v):
         #     raise TypeError(f'Not all elements in column {cn} are of the same type')
@@ -755,16 +751,16 @@ def _create_table(column_names, columns_descriptions, values, types=None):
         elif v_type == bool:
             args = {'name': cn, 'description': cd, 'values': v}
             columns.append(_create_column(data_type='string', kwargs=args))
-        elif v_type == gw.ImageWrapper or v_type == model.ImageI:
+        elif v_type in [gw.ImageWrapper, model.ImageI]:
             args = {'name': cn, 'description': cd, 'values': [img.getId() for img in v]}
             columns.append(_create_column(data_type='image', kwargs=args))
-        elif v_type == gw.RoiWrapper or v_type == model.RoiI:
+        elif v_type in [gw.RoiWrapper, model.RoiI]:
             args = {'name': cn, 'description': cd, 'values': [roi.getId() for roi in v]}
             columns.append(_create_column(data_type='roi', kwargs=args))
         elif isinstance(v_type, (list, tuple)):  # We are creating array columns
 
             # Verify that every element in the 'array' is the same length and type
-            if not all(len(x) == len(v[0]) for x in v):
+            if any(len(x) != len(v[0]) for x in v):
                 raise IndexError(f'Not all elements in column {cn} have the same length')
             if not all(all(isinstance(x, type(v[0][0])) for x in a) for a in v):
                 raise TypeError(f'Not all the elements in the array column {cn} are of the same type')
