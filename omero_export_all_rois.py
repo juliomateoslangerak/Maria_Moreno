@@ -24,6 +24,8 @@ try:
                                  port=PORT,
                                  group=GROUP)
 
+    conn.c.enableKeepAlive(60)
+
     dataset_id = int(DATASET)
 
     roi_filter = ROI_COMMENTS
