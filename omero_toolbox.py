@@ -62,13 +62,17 @@ COLUMN_TYPES = {'string': grid.StringColumn,
                 }
 
 
-def open_connection(username, password, host, port, group=None, secure=False):
+def open_connection(username, password, host, port, group=None, secure=False, keep_alive=None):
     conn = gw.BlitzGateway(username=username,
                            passwd=password,
                            host=host,
                            port=port,
                            group=group,
                            secure=secure)
+
+    if keep_alive is not None:
+        conn.c.enableKeepAlive(keep_alive)
+        
     try:
         conn.connect()
     except Exception as e:

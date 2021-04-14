@@ -22,9 +22,8 @@ try:
                                  password=PASS,
                                  host=HOST,
                                  port=PORT,
-                                 group=GROUP)
-
-    conn.c.enableKeepAlive(60)
+                                 group=GROUP,
+                                 keep_alive=60)
 
     dataset_id = int(DATASET)
 
