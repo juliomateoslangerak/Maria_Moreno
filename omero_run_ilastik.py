@@ -17,50 +17,59 @@ logger = logging.getLogger(__name__)
 # Define variables
 TEMP_DIR = '/home/ubuntu/temp'
 ILASTIK_PATH = '/opt/ilastik-1.3.3post3-Linux/run_ilastik.sh'
-PROJECT_PATH = './models/HippocampalGliosis_v1.ilp'
-# PROJECT_PATH = './models/Neuronal_death_v2.ilp'
 
-# Probability image is referring to channels in aip_image as follows:
-# (object_ch, prb_ch)
-object_ch_match = [(0, 0),
-                   (1, 1),
-                   (2, 2),
+NR_CHANNELS = 3
+
+if NR_CHANNELS == 3:
+    PROJECT_PATH = './models/HippocampalGliosis_v1.ilp'
+    ch_names = ['Microglie', 'Astrocyte', 'Neurone']
+
+    # Probability image is referring to channels in aip_image as follows:
+    # (object_ch, prb_ch)
+    object_ch_match = [(0, 0),
+                       (1, 1),
+                       (2, 2),
+                       ]
+    ch_bg_match = [(0, 3),
+                   (1, 3),
+                   (2, 3)
                    ]
-# object_ch_match = [(0, 0),
-#                    (1, 1),
-#                    ]
-ch_bg_match = [(0, 3),
-               (1, 3),
-               (2, 3)
-               ]
-# ch_bg_match = [(0, 2),
-#                (1, 2),
-#                ]
 
-ch_names = ['Microglie', 'Astrocyte', 'Neurone']
-# ch_names = ['Nuclei', 'Neurons_F1B']
+    segmentation_thr = [180,
+                        100,
+                        180,
+                        200]
+    upper_correction_factors = [1,
+                                1,
+                                1,
+                                1]
+    lower_correction_factors = [0.8,
+                                0.8,
+                                0.8,
+                                1]
 
-segmentation_thr = [180,
-                    100,
-                    180,
-                    200]
-# segmentation_thr = [150,
-#                     100,
-#                     200]
-upper_correction_factors = [1,
-                            1,
-                            1,
-                            1]
-# upper_correction_factors = [1,
-#                             1,
-#                             1]
-lower_correction_factors = [0.8,
-                            0.8,
-                            0.8,
-                            1]
-# lower_correction_factors = [0.8,
-#                             0.2,
-#                             1]
+elif NR_CHANNELS == 2:
+    PROJECT_PATH = './models/Neuronal_death_v2.ilp'
+    ch_names = ['Nuclei', 'Neurons_F1B']
+
+    # Probability image is referring to channels in aip_image as follows:
+    # (object_ch, prb_ch)
+    object_ch_match = [(0, 0),
+                       (1, 1),
+                       ]
+    ch_bg_match = [(0, 2),
+                   (1, 2),
+                   ]
+
+    segmentation_thr = [150,
+                        100,
+                        200]
+    upper_correction_factors = [1,
+                                1,
+                                1]
+    lower_correction_factors = [0.8,
+                                0.2,
+                                1]
 
 
 def run_ilastik(ilastik_path, input_path, model_path):
