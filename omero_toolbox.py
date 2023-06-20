@@ -751,8 +751,30 @@ def _create_table(column_names, columns_descriptions, values, types=None):
             args = {'name': cn, 'description': cd, 'size': size, 'values': v}
             columns.append(_create_column(data_type='string', kwargs=args))
         elif v_type == int:
-            args = {'name': cn, 'description': cd, 'values': v}
-            columns.append(_create_column(data_type='long', kwargs=args))
+            if cn.lower() in ["image", "imageid", "image id", "image_id"]:
+                args = {'name': cn, 'description': cd, 'values': v}
+                columns.append(_create_column(data_type='image', kwargs=args))
+            elif cn.lower() in ["dataset", "datasetid", "dataset id", "dataset_id"]:
+                args = {'name': cn, 'description': cd, 'values': v}
+                columns.append(_create_column(data_type='dataset', kwargs=args))
+            elif cn.lower() in ["plate", "plateid", "plate id", "plate_id"]:
+                args = {'name': cn, 'description': cd, 'values': v}
+                columns.append(_create_column(data_type='plate', kwargs=args))
+            elif cn.lower() in ["well", "wellid", "well id", "well_id"]:
+                args = {'name': cn, 'description': cd, 'values': v}
+                columns.append(_create_column(data_type='well', kwargs=args))
+            elif cn.lower() in ["roi", "roiid", "roi id", "roi_id"]:
+                args = {'name': cn, 'description': cd, 'values': v}
+                columns.append(_create_column(data_type='roi', kwargs=args))
+            elif cn.lower() in ["mask", "maskid", "mask id", "mask_id"]:
+                args = {'name': cn, 'description': cd, 'values': v}
+                columns.append(_create_column(data_type='mask', kwargs=args))
+            elif cn.lower() in ["file", "fileid", "file id", "file_id"]:
+                args = {'name': cn, 'description': cd, 'values': v}
+                columns.append(_create_column(data_type='file', kwargs=args))
+            else:
+                args = {'name': cn, 'description': cd, 'values': v}
+                columns.append(_create_column(data_type='long', kwargs=args))
         elif v_type == float:
             args = {'name': cn, 'description': cd, 'values': v}
             columns.append(_create_column(data_type='double', kwargs=args))
@@ -786,18 +808,20 @@ def _create_table(column_names, columns_descriptions, values, types=None):
     return columns
 
 
-def create_annotation_table(connection, table_name, column_names, column_descriptions, values, namespace=None, table_description=None):
+def create_annotation_table(connection, table_name, column_names, column_descriptions, values, types=None, namespace=None,
+                            table_description=None):
     """Creates a table annotation from a list of lists"""
 
     column_length = len(values[0])
     if any(len(l) != column_length for l in values):
         raise ValueError('The columns have different lengths')
 
-    table_name = f'{table_name}_{"".join([choice(ascii_letters) for n in range(32)])}.h5'
+    table_name = f'{table_name}_{"".join([choice(ascii_letters) for _ in range(32)])}.h5'
 
     columns = _create_table(column_names=column_names,
                             columns_descriptions=column_descriptions,
-                            values=values)
+                            values=values,
+                            types=types)
     resources = connection.c.sf.sharedResources()
     repository_id = resources.repositories().descriptions[0].getId().getValue()
     table = resources.newTable(repository_id, table_name)
