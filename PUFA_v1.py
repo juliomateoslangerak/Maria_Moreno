@@ -22,9 +22,9 @@ col_names = FILE_NAME_TOKENS + \
              "total_area",
              "above_threshold",
              "density_ratio",
-             "Roi_id",
-             "Image_id",
-             "Dataset_id"]
+             "roi_id",
+             "image_id",
+             "dataset_id"]
 
 measurements_df = pd.DataFrame(columns=col_names)
 
@@ -46,6 +46,7 @@ try:
     for dataset_id in dataset_ids:
 
         dataset = omero.get_dataset(conn, dataset_id)
+        print(f"Analyzing dataset: {dataset.getName()}")
 
         images = dataset.listChildren()
 
@@ -79,9 +80,9 @@ try:
                                  "total_area": total_area,
                                  "above_threshold": above_threshold,
                                  "density_ratio": density_ratio,
-                                 "Roi_id": roi.getId(),
-                                 "Image_id": image.getId(),
-                                 "Dataset_id": dataset_id,
+                                 "roi_id": roi.getId().getValue(),
+                                 "image_id": image.getId(),
+                                 "dataset_id": dataset.getId(),
                                  })
                 measurements_df = measurements_df.append(row_data, ignore_index=True)
 
