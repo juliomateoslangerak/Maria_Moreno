@@ -232,13 +232,13 @@ def _get_planes(image, ranges):
     return intensities
 
 
-def get_shape_intensities(image, shape, zero_edge=False):
+def get_shape_intensities(image, shape, zero_edge=False, zero_value="zero"):
     """Returns a numpy array containing the raw intensities within the ROI"""
     # TODO: check on time and z binding. For the moment we are cutting through all z and t
     if isinstance(shape, model.RectangleI):
         data = _get_rectangle_intensities(image, shape)
     elif isinstance(shape, model.PolygonI):
-        data = _get_polygon_intensities(image, shape, zero_edge=zero_edge)
+        data = _get_polygon_intensities(image, shape, zero_edge=zero_edge, zero_value=zero_value)
 
     return data
 
@@ -261,7 +261,7 @@ def _get_rectangle_intensities(image, shape):
     return get_intensities(image=image, x_range=x_range, y_range=y_range)
 
 
-def _get_polygon_intensities(image, shape, zero_edge):
+def _get_polygon_intensities(image, shape, zero_edge, zero_value):
     # We max cause marking ROIs in GUI may render some coordinates negative
     shape_points = shape.getPoints()._val
     shape_points = [
@@ -290,7 +290,11 @@ def _get_polygon_intensities(image, shape, zero_edge):
     if zero_edge:
         fill_y_coords, fill_x_coords = draw.polygon(shape_y_coors, shape_x_coors, data.shape[-2:])
 
-        masked_data = np.zeros(data.shape, dtype=data.dtype)
+        if zero_value == "zero":
+            masked_data = np.zeros(data.shape, dtype=data.dtype)
+        elif zero_value == "min":
+            masked_data = np.full(data.shape, fill_value=data.min())
+
         masked_data[..., fill_y_coords, fill_x_coords] = data[..., fill_y_coords, fill_x_coords]
 
         return masked_data
