@@ -20,11 +20,14 @@ col_names = FILE_NAME_TOKENS + \
              "min_int",
              "max_int",
              "total_area",
-             "above_threshold",
-             "density_ratio",
+             "above_threshold_1000",
+             "density_ratio_1000",
+             "above_threshold_1200",
+             "density_ratio_1200",
              "roi_id",
              "image_id",
-             "dataset_id"]
+             "dataset_id",
+             ]
 
 measurements_df = pd.DataFrame(columns=col_names)
 
@@ -54,20 +57,22 @@ try:
         roi_service = conn.getRoiService()
 
         for image in images:
-            print(f"Analyzing image: {image.getName()}")
+            print(f"  Analyzing image: {image.getName()}")
             result = roi_service.findByImage(image.getId(), None)
             for roi in result.rois:
                 shape = roi.getPrimaryShape()
                 shape_comment = shape.getTextValue()._val
-                print(f"  Analyzing shape: {shape_comment}")
+                print(f"    Analyzing shape: {shape_comment}")
 
-                data = omero.get_shape_intensities(image, shape, zero_edge=True, zero_value="min")
+                data = omero.get_shape_intensities(image, shape, zero_edge=True)
                 threshold = threshold_otsu(data)
                 min_int = data.min()
                 max_int = data.max()
                 total_area = np.count_nonzero(data > min_int)
-                above_threshold = np.count_nonzero(data > threshold)
-                density_ratio = above_threshold / total_area
+                above_threshold_1000 = np.count_nonzero(data > 1000)
+                density_ratio_1000 = above_threshold_1000 / total_area
+                above_threshold_1200 = np.count_nonzero(data > 1200)
+                density_ratio_1200 = above_threshold_1200 / total_area
 
                 row_data = {}
                 for token in FILE_NAME_TOKENS:
@@ -78,23 +83,26 @@ try:
                                  "min_int": min_int,
                                  "max_int": max_int,
                                  "total_area": total_area,
-                                 "above_threshold": above_threshold,
-                                 "density_ratio": density_ratio,
+                                 "above_threshold_1000": above_threshold_1000,
+                                 "density_ratio_1000": density_ratio_1000,
+                                 "above_threshold_1200": above_threshold_1200,
+                                 "density_ratio_1200": density_ratio_1200,
                                  "roi_id": roi.getId().getValue(),
                                  "image_id": image.getId(),
                                  "dataset_id": dataset.getId(),
                                  })
                 measurements_df = measurements_df.append(row_data, ignore_index=True)
 
-    omero_table = omero.create_annotation_table(conn, "data_table",
-                                                column_names=measurements_df.columns.tolist(),
-                                                column_descriptions=measurements_df.columns.tolist(),
-                                                values=[measurements_df[c].values.tolist() for c in measurements_df.columns],
-                                                types=None,
-                                                namespace="version_1",
-                                                table_description="data_table"
-                                                )
-    omero.link_annotation(project, omero_table)
+    measurements_df.to_csv("PUFA_v1.csv", index=False)
+    # omero_table = omero.create_annotation_table(conn, "data_table",
+    #                                             column_names=measurements_df.columns.tolist(),
+    #                                             column_descriptions=measurements_df.columns.tolist(),
+    #                                             values=[measurements_df[c].values.tolist() for c in measurements_df.columns],
+    #                                             types=None,
+    #                                             namespace="version_1",
+    #                                             table_description="data_table"
+    #                                             )
+    # omero.link_annotation(project, omero_table)
 
 
 finally:

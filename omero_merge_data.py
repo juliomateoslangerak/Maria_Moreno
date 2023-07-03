@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 # Define variables
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-TEMP_DIR = '/home/ubuntu/temp'
+TEMP_DIR = '/home/julio/temp'
 
 # Probability image is referring to channels in aip_image as follows:
 # (object_ch, prb_ch)
@@ -144,7 +144,6 @@ def run(user, password, dataset, group='Hippocampal Gliosis CD3', host='omero.mr
                 im_table[f'sum_intensity_bg_{ch_names[ch]}'] = bg_df['integrated_intensity'].sum()
                 im_table[f'mean_intensity_bg_{ch_names[ch]}'] = bg_df['integrated_intensity'].sum() / \
                                                                 bg_df['area'].sum()
-
 
             table = table.append(im_table)
 
