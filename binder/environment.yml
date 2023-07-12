@@ -35,6 +35,7 @@ dependencies:
   - pip:
     - omero-rois
     - argh
+    - ezomero
     # - yapsy
     # - itkwidgets
     # - ome-zarr
