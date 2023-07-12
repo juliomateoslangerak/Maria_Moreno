@@ -72,7 +72,7 @@ try:
             raw_data = omero_toolbox.get_shape_intensities(raw_image, shape, zero_edge=True, zero_value="zero")
             prob_data = omero_toolbox.get_shape_intensities(prob_image, shape, zero_edge=True, zero_value="min")
 
-            thresholded = apply_hysteresis_threshold(prob_data,
+            thresholded = apply_hysteresis_threshold(prob_data[0, 0, 0,...],
                                                      low=THRESHOLD_MAX,
                                                      high=THRESHOLD_MIN
                                                      )
@@ -80,7 +80,12 @@ try:
             labels = label(thresholded)
 
             mask = labels > 0
-            mask = omero_toolbox.create_shape_mask(mask, x_pos=shape.getX().getValue(), y_pos=shape.getY().getValue(),
+
+            points = [tuple(float(c) for c in p.split(',')) for p in shape.getPoints()._val.split()]
+            x_pos = min([int(x) for x, _ in points])
+            y_pos = min([int(y) for _, y in points])
+
+            mask = omero_toolbox.create_shape_mask(mask, x_pos=x_pos, y_pos=y_pos,
                                                    z_pos=None, t_pos=None, mask_name=shape_comment)
             omero_toolbox.create_roi(conn, raw_image, [mask])
 
