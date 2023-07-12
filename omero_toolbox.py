@@ -977,7 +977,7 @@ def create_shape_polygon(points_list, z_pos, t_pos,
 
 def create_shape_mask(mask_array, x_pos, y_pos, z_pos, t_pos,
                       mask_name=None,
-                      fill_color=(10, 10, 10, 255)):
+                      fill_color=(0, 255, 0, 120)):
     mask = model.MaskI()
     mask.setX(rtypes.rdouble(x_pos))
     mask.setY(rtypes.rdouble(y_pos))
