@@ -988,8 +988,10 @@ def create_shape_mask(mask_array, x_pos, y_pos, z_pos, t_pos,
     mask.setFillColor(rtypes.rint(_rgba_to_int(*fill_color)))
     if mask_name:
         mask.setTextValue(rtypes.rstring(mask_name))
-    mask_packed = np.packbits(mask_array)  # TODO: raise error when not boolean array
-    mask.setBytes(mask_packed.tobytes())
+    # mask_packed = np.packbits(mask_array)  # TODO: raise error when not boolean array
+    # mask.setBytes(mask_packed.tobytes())
+    mask.setBytes(np.packbits(np.asarray(mask_array, dtype=int)))
+
 
     return mask
 

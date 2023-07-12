@@ -1,4 +1,5 @@
 import numpy as np
+import omero_rois
 import pandas as pd
 
 from skimage.filters import apply_hysteresis_threshold
@@ -37,16 +38,16 @@ col_names = FILE_NAME_TOKENS + \
 
 measurements_df = pd.DataFrame(columns=col_names)
 
-dataset_id = int(input("Dataset: "))
+dataset_id = int(input("Dataset: ") or 21642)
 
 try:
     # Open the connection to OMERO
-    conn = omero_toolbox.open_connection(username=input("user: "),
-                                 password=getpass("pass: "),
-                                 host=str(input("host: ") or "omero.mri.cnrs.fr"),
-                                 port=int(input("port: ") or 4064),
-                                 group=input("Group: "),
-                                 keep_alive=60)
+    conn = omero_toolbox.open_connection(username=str(input("user: ") or "mateos"),
+                                         password=getpass("pass: "),
+                                         host=str(input("host: ") or "omero.mri.cnrs.fr"),
+                                         port=int(input("port: ") or 4064),
+                                         group=str(input("Group: ") or "PUFA"),
+                                         keep_alive=60)
 
     dataset = omero_toolbox.get_dataset(conn, dataset_id)
 
@@ -54,16 +55,18 @@ try:
 
     project = dataset.getParent()
     image_ids = ezomero.get_image_ids(conn, dataset=dataset_id)
-    images = {conn.getObject("Image", i).get_name(): conn.getObject("Image", i) for i in image_ids}
+    images = {conn.getObject("Image", i).get_name(): i for i in image_ids}
 
     roi_service = conn.getRoiService()
 
-    for image_name, raw_image in images.items():
+    for image_name, raw_image_id in images.items():
         print(f"Analyzing image: {image_name}")
         if image_name.endswith("_PROB"):
             continue
-        prob_image = images[f"{image_name}_PROB"]
-        result = roi_service.findByImage(raw_image.getId(), None)
+        raw_image = conn.getObject("Image", raw_image_id)
+        prob_image = conn.getObject("Image", images[f"{image_name}_PROB"])
+
+        result = roi_service.findByImage(raw_image_id, None)
         for roi in result.rois:
             shape = roi.getPrimaryShape()
             shape_comment = shape.getTextValue()._val
@@ -77,22 +80,26 @@ try:
                                                      high=THRESHOLD_MIN
                                                      )
 
-            labels = label(thresholded)
+            # labels = label(thresholded)
+            # labels = label(labels > 0)
+            #
+            # masks = omero_rois.masks_from_label_image(labelim=labels, rgba=(0, 255, 0, 120), text=shape_comment)
 
-            mask = labels > 0
+            # mask = labels > 0
 
             points = [tuple(float(c) for c in p.split(',')) for p in shape.getPoints()._val.split()]
             x_pos = min([int(x) for x, _ in points])
             y_pos = min([int(y) for _, y in points])
 
-            mask = omero_toolbox.create_shape_mask(np.transpose(mask), x_pos=x_pos, y_pos=y_pos,
+            mask = omero_toolbox.create_shape_mask(np.transpose(thresholded), x_pos=x_pos, y_pos=y_pos,
                                                    z_pos=None, t_pos=None, mask_name=shape_comment)
             omero_toolbox.create_roi(conn, raw_image, [mask])
+            # omero_toolbox.create_roi(conn, raw_image, masks)
 
             min_int = np.min(raw_data[np.nonzero(raw_data)])
             max_int = raw_data.max()
             total_area = np.count_nonzero(raw_data > 0)
-            above_threshold = np.count_nonzero(labels > 0)
+            above_threshold = np.count_nonzero(thresholded > 0)
             density_ratio = above_threshold / total_area
 
             row_data = {}
