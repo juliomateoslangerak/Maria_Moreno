@@ -85,7 +85,7 @@ try:
             x_pos = min([int(x) for x, _ in points])
             y_pos = min([int(y) for _, y in points])
 
-            mask = omero_toolbox.create_shape_mask(mask, x_pos=x_pos, y_pos=y_pos,
+            mask = omero_toolbox.create_shape_mask(np.transpose(mask), x_pos=x_pos, y_pos=y_pos,
                                                    z_pos=None, t_pos=None, mask_name=shape_comment)
             omero_toolbox.create_roi(conn, raw_image, [mask])
 
