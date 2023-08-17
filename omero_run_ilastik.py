@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 # Define variables
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-# TEMP_DIR = '/run/media/julio/DATA/Audrey/temp'
-TEMP_DIR = '/run/media/julio/DATA/Maria/temp'
+TEMP_DIR = '/run/media/julio/DATA/Audrey/temp'
+# TEMP_DIR = '/run/media/julio/DATA/Maria/temp'
 ILASTIK_PATH = '/home/julio/Apps/ilastik-1.3.3post3-Linux/run_ilastik.sh'
-# PROJECT_PATH = '/run/media/julio/DATA/Audrey/projects/test_project_v02.ilp'
-PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/test_project_v02.ilp'
+PROJECT_PATH = '/run/media/julio/DATA/Audrey/projects/test_project_v02.ilp'
+# PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/test_project_v02.ilp'
 
 ch_names = ['fibers']
 
