@@ -1,0 +1,4 @@
+2020-08-13 11:48:17,041 __main__-DEBUG: ----------Starting relocation--------
+2020-08-13 11:48:17,042 __main__-DEBUG: trying /home/julio/Apps/ilastik-1.3.3b2-Linux/.prefix_previous
+2020-08-13 11:48:17,043 __main__-DEBUG: PrefixConfig(spec_path=PosixPath('/home/julio/Apps/ilastik-1.3.3b2-Linux/.prefix_previous'), root_path=PosixPath('/home/julio/Apps/ilastik-1.3.3b2-Linux'), clean=True, prefix=PosixPath('/home/julio/Apps/ilastik-1.3.3b2-Linux'), valid=True)
+2020-08-13 11:48:17,658 __main__-DEBUG: updating prefix file /home/julio/Apps/ilastik-1.3.3b2-Linux/.prefix_previous with /home/julio/Apps/ilastik-1.3.3b2-Linux

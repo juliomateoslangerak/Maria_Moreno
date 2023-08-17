@@ -1,4 +1,5 @@
 import logging
+import argh
 
 import omero_toolbox as omero
 from omero.gateway import FileAnnotationWrapper
@@ -13,38 +14,36 @@ logger = logging.getLogger(__name__)
 # Define variables
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-TEMP_DIR = '/run/media/julio/DATA/Maria/temp'
+TEMP_DIR = '/home/julio/temp'
 
 # Probability image is referring to channels in aip_image as follows:
 # (object_ch, prb_ch)
 object_ch_match = [(0, 0),
                    (1, 1),
-                   # (2, 2),
+                   (2, 2),
                    ]
-# ch_bg_match = [(0, 3),
-#                (1, 3),
-#                (2, 3)]
-ch_bg_match = [(0, 2),
-               (1, 2),
-               ]
-ch_names = ['Nuclei', 'Neurons_F1B']
+ch_bg_match = [(0, 3),
+               (1, 3),
+               (2, 3)]
+# ch_bg_match = [(0, 2),
+            #    (1, 2),
+            #    ]
+ch_names = ['Microglie', 'Astrocyte', 'Neurone']
+# ch_names = ['Nuclei', 'Neurons_F1B']
 
 
-def omero_table_from_df(dataframe):
-    pass
-
-
-if __name__ == '__main__':
+def run(user, password, dataset, group='Hippocampal Gliosis CD3', host='omero.mri.cnrs.fr', port=4064):
     try:
         # Open the connection to OMERO
-        conn = omero.open_connection(username=input("Username: "),
-                                     password=getpass("OMERO Password: ", None),
-                                     host=str(input('server (omero.mri.cnrs.fr): ') or HOST),
-                                     port=int(input('port (4064): ') or PORT),
-                                     group=input("Group: "))
+        conn = omero.open_connection(username=user,
+                                     password=password,
+                                     host=host,
+                                     port=port,
+                                     group=group)
+        conn.c.enableKeepAlive(60)
 
         # get tagged images in dataset
-        dataset_id = int(input('ROIs Dataset ID: '))
+        dataset_id = int(dataset)
         dataset = omero.get_dataset(conn, dataset_id)
 
         images = dataset.listChildren()
@@ -78,8 +77,8 @@ if __name__ == '__main__':
             logger.info(f'Analyzing image {image_root_name}')
 
             image = conn.getObject('Image', images_names_ids[f'{image_root_name}_AIP'])
-            # aip_data = omero.get_intensities(image)
-            aip_data = np.load(str(os.path.join(TEMP_DIR, str(dataset_id), f'{image_root_name}.npy')))
+            aip_data = omero.get_intensities(image)
+            # aip_data = np.load(str(os.path.join(TEMP_DIR, str(dataset_id), f'{image_root_name}.npy')))
             aip_data = np.squeeze(aip_data)
 
             # Filling data table
@@ -108,8 +107,10 @@ if __name__ == '__main__':
                 if isinstance(ann, FileAnnotationWrapper):
                     file_name = ann.getFileName()
 
-                    local_file_path = os.path.join(TEMP_DIR, str(dataset_id),
-                                                   f'{image.getId()}_{image_root_name}_{file_name}')
+                    local_file_path = os.path.join(TEMP_DIR, f'{image.getId()}_{image_root_name}_{file_name}')
+                    with open(str(local_file_path), 'wb') as f:
+                        for chunk in ann.getFileInChunks():
+                            f.write(chunk)
 
                     if 'object_df' in file_name:
                         object_dfs[int(file_name[2])] = pd.read_csv(local_file_path)
@@ -137,12 +138,12 @@ if __name__ == '__main__':
                     im_table[f'sum_intensity_{ch_names[ch]}'] = 0
                     im_table[f'mean_intensity_{ch_names[ch]}'] = 0
 
+                    logger.warning(f'No {ch_names[ch]} were detected for image {image_root_name}')
+
                 im_table[f'sum_area_bg_{ch_names[ch]}'] = bg_df['area'].sum()
                 im_table[f'sum_intensity_bg_{ch_names[ch]}'] = bg_df['integrated_intensity'].sum()
                 im_table[f'mean_intensity_bg_{ch_names[ch]}'] = bg_df['integrated_intensity'].sum() / \
                                                                 bg_df['area'].sum()
-
-                    logger.warning(f'No {ch_names[ch]} were detected for image {image_root_name}')
 
             table = table.append(im_table)
 
@@ -151,3 +152,7 @@ if __name__ == '__main__':
     finally:
         conn.close()
         logger.info('Done')
+
+
+if __name__ == '__main__':
+    argh.dispatch_command(run)

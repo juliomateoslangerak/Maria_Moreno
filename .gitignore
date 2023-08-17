@@ -1,0 +1,7 @@
+__pycache__
+envs
+venv
+venvs
+.idea
+.envs
+.vscode/settings.json
