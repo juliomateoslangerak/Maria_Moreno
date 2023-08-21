@@ -29,7 +29,7 @@ col_names = FILE_NAME_TOKENS + \
              "dataset_id",
              ]
 
-measurements_df = pd.DataFrame(columns=col_names)
+measurements = []
 
 dataset_ids = [int(i) for i in input("Datasets: ").split(",")]
 
@@ -91,18 +91,18 @@ try:
                                  "image_id": image.getId(),
                                  "dataset_id": dataset.getId(),
                                  })
-                measurements_df = measurements_df.append(row_data, ignore_index=True)
-
+                measurements.append(row_data)
+    measurements_df = pd.DataFrame.from_records(measurements)
     measurements_df.to_csv("PUFA_v1.csv", index=False)
-    # omero_table = omero.create_annotation_table(conn, "data_table",
-    #                                             column_names=measurements_df.columns.tolist(),
-    #                                             column_descriptions=measurements_df.columns.tolist(),
-    #                                             values=[measurements_df[c].values.tolist() for c in measurements_df.columns],
-    #                                             types=None,
-    #                                             namespace="version_1",
-    #                                             table_description="data_table"
-    #                                             )
-    # omero.link_annotation(project, omero_table)
+    omero_table = omero.create_annotation_table(conn, "data_table",
+                                                column_names=measurements_df.columns.tolist(),
+                                                column_descriptions=measurements_df.columns.tolist(),
+                                                values=[measurements_df[c].values.tolist() for c in measurements_df.columns],
+                                                types=None,
+                                                namespace="version_1",
+                                                table_description="data_table"
+                                                )
+    omero.link_annotation(project, omero_table)
 
 
 finally:
