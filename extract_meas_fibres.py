@@ -41,7 +41,7 @@ col_names = FILE_NAME_TOKENS + \
              "dataset_id",
              ]
 
-measurements_df = pd.DataFrame(columns=col_names)
+measurements = []
 
 dataset_id = int(input("Dataset: ") or 22479)
 prob_dataset_id = int(input("Probabilities dataset: ") or 22487)
@@ -140,18 +140,20 @@ try:
                              "prob_image_id": prob_image.getId(),
                              "dataset_id": dataset.getId(),
                              })
-            measurements_df = measurements_df.append(row_data, ignore_index=True)
+            measurements.append(row_data)
 
+    measurements_df = pd.DataFrame.from_records(measurements)
     measurements_df.to_csv(f"novoDA_dataset-{dataset_id}_v2.csv", index=False)
-    # omero_table = omero_toolbox.create_annotation_table(conn, "data_table",
-    #                                             column_names=measurements_df.columns.tolist(),
-    #                                             column_descriptions=measurements_df.columns.tolist(),
-    #                                             values=[measurements_df[c].values.tolist() for c in measurements_df.columns],
-    #                                             types=None,
-    #                                             namespace="version_1",
-    #                                             table_description="data_table"
-    #                                             )
-    # omero_toolbox.link_annotation(project, omero_table)
+    omero_table = omero_toolbox.create_annotation_table(
+        conn, "data_table",
+        column_names=measurements_df.columns.tolist(),
+        column_descriptions=measurements_df.columns.tolist(),
+        values=[measurements_df[c].values.tolist() for c in measurements_df.columns],
+        types=None,
+        namespace="version_1",
+        table_description="data_table"
+        )
+    omero_toolbox.link_annotation(project, omero_table)
 except Exception as e:
     print(e)
 
