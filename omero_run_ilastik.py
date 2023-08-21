@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 # Define variables
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-TEMP_DIR = '/run/media/julio/DATA/Audrey/temp'
-# TEMP_DIR = '/run/media/julio/DATA/Maria/temp'
+# TEMP_DIR = '/run/media/julio/DATA/Audrey/temp'
+TEMP_DIR = '/run/media/julio/DATA/Maria/temp'
 ILASTIK_PATH = '/home/julio/Apps/ilastik-1.3.3post3-Linux/run_ilastik.sh'
-PROJECT_PATH = '/run/media/julio/DATA/Audrey/projects/test_project_v02.ilp'
-# PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/test_project_v02.ilp'
+# PROJECT_PATH = '/run/media/julio/DATA/Audrey/projects/test_project_v02.ilp'
+PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/test_project_v02.ilp'
 
 ch_names = ['fibers']
 
@@ -86,8 +86,8 @@ if __name__ == '__main__':
 
             temp_file = f'{TEMP_DIR}/{image.getId()}.npy'
             # Fishy. Our channel is 1 and we have to transpose to input, select channel 1 and then add a dimension
-            # np.save(temp_file, np.expand_dims(np.transpose(image_data, (2, 0, 3, 4, 1))[..., 1], 4))
-            np.save(temp_file, np.transpose(image_data, (2, 0, 3, 4, 1)))
+            np.save(temp_file, np.expand_dims(np.transpose(image_data, (2, 0, 3, 4, 1))[..., 1], 4))
+            # np.save(temp_file, np.transpose(image_data, (2, 0, 3, 4, 1)))
 
             conn.keepAlive()
 
