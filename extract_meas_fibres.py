@@ -43,8 +43,8 @@ col_names = FILE_NAME_TOKENS + \
 
 measurements = []
 
-dataset_id = int(input("Dataset: ") or 22479)
-prob_dataset_id = int(input("Probabilities dataset: ") or 22487)
+dataset_id = int(input("Dataset: ") or 22801)
+prob_dataset_id = int(input("Probabilities dataset: ") or 22918)
 
 try:
     # Open the connection to OMERO
@@ -71,6 +71,9 @@ try:
     for image_name in images.keys():
         print(f"Analyzing image: {image_name}")
         raw_image = conn.getObject("Image", images[image_name])
+        if "label image" in raw_image.getName() or "macro image" in raw_image.getName():
+            continue
+
         prob_image = conn.getObject("Image", prob_images[f"{image_name}_PROB"])
 
         result = roi_service.findByImage(images[image_name], None)
@@ -143,7 +146,7 @@ try:
             measurements.append(row_data)
 
     measurements_df = pd.DataFrame.from_records(measurements)
-    measurements_df.to_csv(f"novoDA_dataset-{dataset_id}_v2.csv", index=False)
+    measurements_df.to_csv(f"/home/julio/PycharmProjects/Maria_Moreno/novoDA_dataset-{dataset_id}_v3.csv", index=False)
     omero_table = omero_toolbox.create_annotation_table(
         conn, "data_table",
         column_names=measurements_df.columns.tolist(),

@@ -755,7 +755,7 @@ def _create_table(column_names, columns_descriptions, values, types=None):
                 args = {'name': cn, 'description': cd, 'values': v}
                 columns.append(_create_column(data_type='image', kwargs=args))
             elif cn.lower() in ["dataset", "datasetid", "dataset id", "dataset_id"]:
-                args = {'name': cn, 'description': cd, 'values': v}
+                args = {'name': cn, 'values': v}  # Dataset columns do not have description
                 columns.append(_create_column(data_type='dataset', kwargs=args))
             elif cn.lower() in ["plate", "plateid", "plate id", "plate_id"]:
                 args = {'name': cn, 'description': cd, 'values': v}

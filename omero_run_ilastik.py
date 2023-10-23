@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 # Define variables
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-# TEMP_DIR = '/run/media/julio/DATA/Audrey/temp'
-TEMP_DIR = '/run/media/julio/DATA/Maria/temp'
+TEMP_DIR = '/run/media/julio/DATA/Audrey/temp'
+# TEMP_DIR = '/run/media/julio/DATA/Maria/temp'
 ILASTIK_PATH = '/home/julio/Apps/ilastik-1.3.3post3-Linux/run_ilastik.sh'
-# PROJECT_PATH = '/run/media/julio/DATA/Audrey/projects/test_project_v02.ilp'
-PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/test_project_v02.ilp'
+PROJECT_PATH = '/run/media/julio/DATA/Audrey/projects/test_project_v02.ilp'
+# PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/test_project_v02.ilp'
 
 ch_names = ['fibers']
 
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         keepAlive_thread.start()
 
         # get tagged images in dataset
-        dataset_id = int(input('Dataset ID: ') or 22065)
+        dataset_id = int(input('Dataset ID: ') or 22801)
         dataset = omero.get_dataset(conn, dataset_id)
         project = dataset.getParent()
 
@@ -80,6 +80,9 @@ if __name__ == '__main__':
             # if image.getName() not in ["PV-cre-D2-fl_B95221-M-+_+_TH-cy5_DAPI_07062023-Deblurring-01.czi [Scene #6]",
             #                            "PV-cre-D2-fl_B95224-F-cre_+_TH-cy5_DAPI_07062023-Deblurring-04.czi [Scene #7]"]:
             #     continue
+            if "label image" in image.getName() or "macro image" in image.getName():
+                continue
+
             logger.info(f'Analyzing image {image.getName()}')
 
             image_data = omero.get_intensities(image)
