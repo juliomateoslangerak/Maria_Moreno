@@ -62,7 +62,7 @@ COLUMN_TYPES = {'string': grid.StringColumn,
                 }
 
 
-def open_connection(username, password, host, port, group=None, secure=False, keep_alive=None):
+def open_connection(username, password, host, port, group=None, secure=True, keep_alive=None):
     conn = gw.BlitzGateway(username=username,
                            passwd=password,
                            host=host,

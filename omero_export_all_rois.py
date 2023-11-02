@@ -8,14 +8,14 @@ from skimage import draw
 total_tic = time.perf_counter()
 
 # Define variables
-USER = sys.argv[1]
-PASS = sys.argv[2]
-GROUP = sys.argv[3]
-DATASET = sys.argv[4]
-HOST = sys.argv[5]
-PORT = sys.argv[6]
-ROI_COMMENTS = ('PC', 'PT')
-# ROI_COMMENTS = None
+USER = "mateos"
+PASS = input("OMERO Password: ")
+GROUP = "PUFA"
+DATASET = 22895
+HOST = "omero.mri.cnrs.fr"
+PORT = 4064
+# ROI_COMMENTS = ('PC', 'PT')
+ROI_COMMENTS = None
 
 print(f'Running on {HOST}')
 
@@ -28,7 +28,7 @@ try:
                                  group=GROUP,
                                  keep_alive=60)
 
-    dataset_id = int(DATASET)
+    dataset_id = DATASET
 
     roi_filter = ROI_COMMENTS
 
@@ -65,25 +65,12 @@ try:
             data = omero.get_shape_intensities(image, shape, zero_edge=True)
             print(f'Get Intensities time: {time.perf_counter() - tic:0.4f}')
 
-            mip_data = data.max(axis=0, keepdims=True)
-            aip_data = data.mean(axis=0, keepdims=True)
-            aip_data = aip_data.astype(data.dtype)
-
             new_image_name = f'{image.getName().strip()}_{shape_comment}'
 
             tic = time.perf_counter()
             omero.create_image_from_numpy_array(connection=conn,
-                                                data=mip_data,
-                                                image_name=f'{new_image_name}_MIP',
-                                                image_description=f'Source Image ID:{image.getId()}',
-                                                dataset=new_dataset,
-                                                source_image_id=image.getId())
-            print(f'Crete Image time: {time.perf_counter() - tic:0.4f}')
-
-            tic = time.perf_counter()
-            omero.create_image_from_numpy_array(connection=conn,
-                                                data=aip_data,
-                                                image_name=f'{new_image_name}_AIP',
+                                                data=data,
+                                                image_name=f'{new_image_name}',
                                                 image_description=f'Source Image ID:{image.getId()}',
                                                 dataset=new_dataset,
                                                 source_image_id=image.getId())
