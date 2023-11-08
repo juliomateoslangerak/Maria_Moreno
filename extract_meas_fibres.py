@@ -13,8 +13,9 @@ THRESHOLD_MAX = 180
 THRESHOLD_MIN = 120
 MIN_DISTANCE = 2
 
-FILE_NAME_TOKENS = ["expCond1",
-                    "expCond2",
+FILE_NAME_TOKENS = ["diet",
+                    "region",  # Colza_NAC_Prex_Fem_58903_TH-Cy3_replica-1_MAcbSh-G
+                    "treatment",
                     "gender",
                     "mouseId",
                     "label",
@@ -38,15 +39,15 @@ col_names = FILE_NAME_TOKENS + \
 
 measurements_df = pd.DataFrame(columns=col_names)
 
-dataset_id = int(input("Dataset: ") or 21642)
+dataset_id = int(input("Dataset: ") or 22895)
 
 try:
     # Open the connection to OMERO
-    conn = omero_toolbox.open_connection(username=str(input("user: ") or "mateos"),
+    conn = omero_toolbox.open_connection(username=str(input("user: ")),
                                          password=getpass("pass: "),
-                                         host=str(input("host: ") or "omero.mri.cnrs.fr"),
-                                         port=int(input("port: ") or 4064),
-                                         group=str(input("Group: ") or "PUFA"),
+                                         host=str(input("host: ")),
+                                         port=int(input("port: ")),
+                                         group=str(input("Group: ")),
                                          keep_alive=60)
 
     dataset = omero_toolbox.get_dataset(conn, dataset_id)
@@ -64,6 +65,19 @@ try:
         if image_name.endswith("_PROB"):
             continue
         raw_image = conn.getObject("Image", raw_image_id)
+
+        # RUn this when images are local. Import and analyze
+        # prob_image_data = np.load(f"/run/media/julio/225e6802-f653-4336-bc7f-b87ab8f6600b/julio/PUFA/NAC/full_images/{image_name}_Probabilities.npy")
+        # prob_image = omero_toolbox.create_image_from_numpy_array(conn,
+        #                                                          data=prob_image_data,
+        #                                                          image_name=f"{image_name}_PROB",
+        #                                                          image_description=f"source image_id:{raw_image_id}",
+        #                                                          channel_labels=["fibres", "backgorund"],
+        #                                                          dataset=dataset,
+        #                                                          source_image_id=None,
+        #                                                          channels_list=None,
+        #                                                          force_whole_planes=False)
+
         prob_image = conn.getObject("Image", images[f"{image_name}_PROB"])
 
         result = roi_service.findByImage(raw_image_id, None)
@@ -122,15 +136,15 @@ try:
             measurements_df = measurements_df.append(row_data, ignore_index=True)
 
     measurements_df.to_csv(f"PUFA_dataset-{dataset_id}_v2.csv", index=False)
-    # omero_table = omero_toolbox.create_annotation_table(conn, "data_table",
-    #                                             column_names=measurements_df.columns.tolist(),
-    #                                             column_descriptions=measurements_df.columns.tolist(),
-    #                                             values=[measurements_df[c].values.tolist() for c in measurements_df.columns],
-    #                                             types=None,
-    #                                             namespace="version_1",
-    #                                             table_description="data_table"
-    #                                             )
-    # omero_toolbox.link_annotation(project, omero_table)
+    omero_table = omero_toolbox.create_annotation_table(conn, "data_table",
+                                                column_names=measurements_df.columns.tolist(),
+                                                column_descriptions=measurements_df.columns.tolist(),
+                                                values=[measurements_df[c].values.tolist() for c in measurements_df.columns],
+                                                types=None,
+                                                namespace="version_1",
+                                                table_description="data_table"
+                                                )
+    omero_toolbox.link_annotation(project, omero_table)
 except Exception as e:
     print(e)
 
