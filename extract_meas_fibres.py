@@ -25,7 +25,7 @@ FILE_NAME_TOKENS = ["diet",
 col_names = FILE_NAME_TOKENS + \
             ["ROI_name",
              "threshold_max",
-             "threshold_min"
+             "threshold_min",
              "min_int",
              "max_int",
              "total_area",
