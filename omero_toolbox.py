@@ -752,25 +752,25 @@ def _create_table(column_names, columns_descriptions, values, types=None):
             columns.append(_create_column(data_type='string', kwargs=args))
         elif v_type == int:
             if cn.lower() in ["image", "imageid", "image id", "image_id"]:
-                args = {'name': cn, 'description': cd, 'values': v}
+                args = {'name': cn, 'values': v}
                 columns.append(_create_column(data_type='image', kwargs=args))
             elif cn.lower() in ["dataset", "datasetid", "dataset id", "dataset_id"]:
-                args = {'name': cn, 'description': cd, 'values': v}
+                args = {'name': cn, 'values': v}
                 columns.append(_create_column(data_type='dataset', kwargs=args))
             elif cn.lower() in ["plate", "plateid", "plate id", "plate_id"]:
-                args = {'name': cn, 'description': cd, 'values': v}
+                args = {'name': cn, 'values': v}
                 columns.append(_create_column(data_type='plate', kwargs=args))
             elif cn.lower() in ["well", "wellid", "well id", "well_id"]:
-                args = {'name': cn, 'description': cd, 'values': v}
+                args = {'name': cn, 'values': v}
                 columns.append(_create_column(data_type='well', kwargs=args))
             elif cn.lower() in ["roi", "roiid", "roi id", "roi_id"]:
-                args = {'name': cn, 'description': cd, 'values': v}
+                args = {'name': cn, 'values': v}
                 columns.append(_create_column(data_type='roi', kwargs=args))
             elif cn.lower() in ["mask", "maskid", "mask id", "mask_id"]:
-                args = {'name': cn, 'description': cd, 'values': v}
+                args = {'name': cn, 'values': v}
                 columns.append(_create_column(data_type='mask', kwargs=args))
             elif cn.lower() in ["file", "fileid", "file id", "file_id"]:
-                args = {'name': cn, 'description': cd, 'values': v}
+                args = {'name': cn, 'values': v}
                 columns.append(_create_column(data_type='file', kwargs=args))
             else:
                 args = {'name': cn, 'description': cd, 'values': v}
