@@ -43,8 +43,8 @@ col_names = FILE_NAME_TOKENS + \
 
 measurements = []
 
-dataset_id = int(input("Dataset: ") or 22801)
-prob_dataset_id = int(input("Probabilities dataset: ") or 22918)
+dataset_id = int(input("Dataset: ") or 22479)
+prob_dataset_id = int(input("Probabilities dataset: ") or 22487)
 
 try:
     # Open the connection to OMERO
