@@ -239,6 +239,8 @@ def get_shape_intensities(image, shape, zero_edge=False, zero_value="zero"):
         data = _get_rectangle_intensities(image, shape)
     elif isinstance(shape, model.PolygonI):
         data = _get_polygon_intensities(image, shape, zero_edge=zero_edge, zero_value=zero_value)
+    else:
+        raise NotImplementedError("only getting rectangle and polygone shape intensities")
 
     return data
 
