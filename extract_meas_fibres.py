@@ -146,7 +146,7 @@ try:
             measurements.append(row_data)
 
     measurements_df = pd.DataFrame.from_records(measurements)
-    measurements_df.to_csv(f"/home/julio/PycharmProjects/Maria_Moreno/novoDA_dataset-{dataset_id}_v3.csv", index=False)
+    measurements_df.to_csv(f"/home/julio/PycharmProjects/Maria_Moreno/novoDA_dataset-{dataset_id}_v4.csv", index=False)
     omero_table = omero_toolbox.create_annotation_table(
         conn, "data_table",
         column_names=measurements_df.columns.tolist(),
