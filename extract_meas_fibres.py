@@ -84,12 +84,14 @@ try:
         for roi in result.rois:
             shape = roi.getPrimaryShape()
             shape_comment = shape.getTextValue()._val
+            if shape_comment == "tr":
+                continue
             print(f"  Analyzing shape: {shape_comment}")
 
             raw_data = omero_toolbox.get_shape_intensities(raw_image, shape, zero_edge=True, zero_value="zero")
             prob_data = omero_toolbox.get_shape_intensities(prob_image, shape, zero_edge=True, zero_value="min")
 
-            thresholded = apply_hysteresis_threshold(prob_data[0, 0, 0,...],
+            thresholded = apply_hysteresis_threshold(prob_data[0, 0, 0, ...],
                                                      low=THRESHOLD_MAX,
                                                      high=THRESHOLD_MIN
                                                      )
@@ -105,9 +107,9 @@ try:
             x_pos = min([int(x) for x, _ in points])
             y_pos = min([int(y) for _, y in points])
 
-            mask = omero_toolbox.create_shape_mask(np.transpose(thresholded), x_pos=x_pos, y_pos=y_pos,
-                                                   z_pos=None, t_pos=None, mask_name=shape_comment)
-            omero_toolbox.create_roi(conn, raw_image, [mask])
+            # mask = omero_toolbox.create_shape_mask(np.transpose(thresholded), x_pos=x_pos, y_pos=y_pos,
+            #                                        z_pos=None, t_pos=None, mask_name=shape_comment)
+            # omero_toolbox.create_roi(conn, raw_image, [mask])
             # omero_toolbox.create_roi(conn, raw_image, masks)
 
             min_int = np.min(raw_data[np.nonzero(raw_data)])
@@ -137,13 +139,14 @@ try:
 
     measurements_df.to_csv(f"PUFA_dataset-{dataset_id}_v2.csv", index=False)
     omero_table = omero_toolbox.create_annotation_table(conn, "data_table",
-                                                column_names=measurements_df.columns.tolist(),
-                                                column_descriptions=measurements_df.columns.tolist(),
-                                                values=[measurements_df[c].values.tolist() for c in measurements_df.columns],
-                                                types=None,
-                                                namespace="version_1",
-                                                table_description="data_table"
-                                                )
+                                                        column_names=measurements_df.columns.tolist(),
+                                                        column_descriptions=measurements_df.columns.tolist(),
+                                                        values=[measurements_df[c].values.tolist() for c in
+                                                                measurements_df.columns],
+                                                        types=None,
+                                                        namespace="version_1",
+                                                        table_description="data_table"
+                                                        )
     omero_toolbox.link_annotation(project, omero_table)
 except Exception as e:
     print(e)
