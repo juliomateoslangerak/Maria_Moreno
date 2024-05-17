@@ -35,6 +35,7 @@ col_names = FILE_NAME_TOKENS + \
              "segmented_area",
              "segmented_area_ratio",
              "total_raw_intensity",
+             "total_raw_intensity",
              "segmented_raw_intensity",
              "total_rolling_ball_intensity",
              "segmented_rolling_ball_intensity",
@@ -77,7 +78,10 @@ try:
         if "label image" in raw_image.getName() or "macro image" in raw_image.getName():
             continue
 
-        prob_image = conn.getObject("Image", prob_images[f"{image_name}_PROB"])
+        try:
+            prob_image = conn.getObject("Image", prob_images[f"{image_name}_PROB"])
+        except KeyError:
+            continue
 
         result = roi_service.findByImage(images[image_name], None)
         for roi in result.rois:
