@@ -15,9 +15,12 @@ THRESHOLD_MIN = 120
 MIN_DISTANCE = 2
 ROLLING_BALL_RADIUS = 50
 
+# FILE_NAME_TOKENS = ["exp_model",
+#                     "mouse_id",
+#                     "genotype",
+#                     "labelling",
+#                     ]
 FILE_NAME_TOKENS = ["exp_model",
-                    "mouse_id",
-                    "genotype",
                     "labelling",
                     ]
 
@@ -43,8 +46,8 @@ col_names = FILE_NAME_TOKENS + \
 
 measurements = []
 
-dataset_id = int(input("Dataset: ") or 22479)
-prob_dataset_id = int(input("Probabilities dataset: ") or 22487)
+dataset_id = int(input("Dataset: ") or 23775)
+prob_dataset_id = int(input("Probabilities dataset: ") or 24713)
 
 try:
     # Open the connection to OMERO
@@ -123,7 +126,7 @@ try:
 
             row_data = {}
             for token in FILE_NAME_TOKENS:
-                row_data[token] = image_name.split("_")[FILE_NAME_TOKENS.index(token)]
+                row_data[token] = image_name.split("-")[FILE_NAME_TOKENS.index(token)]
 
             row_data.update({"ROI_name": shape_comment,
                              "threshold_max": THRESHOLD_MAX,

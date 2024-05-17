@@ -63,7 +63,7 @@ if __name__ == '__main__':
         keepAlive_thread.start()
 
         # get tagged images in dataset
-        dataset_id = int(input('Dataset ID: ') or 22801)
+        dataset_id = int(input('Dataset ID: ') or 23775)
         dataset = omero.get_dataset(conn, dataset_id)
         project = dataset.getParent()
 
