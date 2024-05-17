@@ -7,7 +7,7 @@ channels:
   # - ilastik-forge/label/ilastik133
 dependencies:
   # - numba==0.48.0
-  - python=3.7
+  - python=3.8
   - omero-py  # ome
   - pip
   # ilastik
