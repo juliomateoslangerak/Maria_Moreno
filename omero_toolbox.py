@@ -6,7 +6,7 @@ from omero import model
 from omero.model import enums, LengthI
 from omero import grid
 from omero import rtypes
-import omero_rois
+# import omero_rois
 
 # Generic imports
 import numpy as np
@@ -702,6 +702,7 @@ def create_annotation_map(connection, annotation, annotation_name=None, annotati
         map_ann.setName(annotation_name)
     if annotation_description is not None:
         map_ann.setDescription(annotation_description)
+        map_ann.unload()
 
     map_ann.setNs(namespace)
 

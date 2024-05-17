@@ -1,5 +1,5 @@
 import numpy as np
-import omero_rois
+# import omero_rois
 import pandas as pd
 
 from skimage.filters import apply_hysteresis_threshold
