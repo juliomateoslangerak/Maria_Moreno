@@ -44,7 +44,7 @@ ch_bg_match = [(0, 3),
 # ch_bg_match = [(0, 2),
 #                (1, 2),
 #                ]
-ch_names = ['Microglie', 'Astrocyte', 'Neurone']
+ch_names = ['Fibers']
 # ch_names = ['Nuclei', 'Neurons_F1B']
 
 segmentation_thr = [180,

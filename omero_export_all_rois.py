@@ -12,7 +12,7 @@ GROUP = sys.argv[3]
 DATASET = sys.argv[4]
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-ROI_COMMENTS = ('PC', 'PT')
+ROI_COMMENTS = ("core-i", "core-ni", "Lsh-i", "Lsh-ni", "Msh-i", "Msh-ni",)
 # ROI_COMMENTS = None
 
 
@@ -54,7 +54,7 @@ try:
                 shape_comment = None
             if roi_filter is not None and shape_comment not in roi_filter:
                 continue
-            data = omero.get_shape_intensities(image, shape, zero_edge=True)
+            data = omero.get_shape_intensities(image, shape, zero_edge=True, zero_value="zero")
             mip_data = data.max(axis=0, keepdims=True)
             aip_data = data.mean(axis=0, keepdims=True)
             aip_data = aip_data.astype(data.dtype)
@@ -65,14 +65,16 @@ try:
                                                 image_name=f'{new_image_name}_MIP',
                                                 image_description=f'Source Image ID:{image.getId()}',
                                                 dataset=new_dataset,
-                                                source_image_id=image.getId())
+                                                source_image_id=image.getId(),
+                                                force_whole_planes=True)
 
             omero.create_image_from_numpy_array(connection=conn,
                                                 data=aip_data,
                                                 image_name=f'{new_image_name}_AIP',
                                                 image_description=f'Source Image ID:{image.getId()}',
                                                 dataset=new_dataset,
-                                                source_image_id=image.getId())
+                                                source_image_id=image.getId(),
+                                                force_whole_planes=True)
 
         print(f'Processed image {counter}')
 

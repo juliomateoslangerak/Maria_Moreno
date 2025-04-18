@@ -5,10 +5,10 @@ from skimage import draw
 
 
 # Define variables
-OUTPUT_DIR = '/run/media/julio/DATA/Maria/roi_raw'
+OUTPUT_DIR = '/run/media/julio/DATA/DOPAVALUE/training_images'
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-ROI_COMMENTS = ('training')
+ROI_COMMENTS = ['training']
 
 
 # Helper functions

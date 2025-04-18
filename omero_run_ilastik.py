@@ -17,52 +17,26 @@ logger = logging.getLogger(__name__)
 # Define variables
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-TEMP_DIR = '/run/media/julio/DATA/Maria/temp'
-ILASTIK_PATH = '/home/julio/Apps/ilastik-1.3.3post3-Linux/run_ilastik.sh'
-PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/HippocampalGliosis_v1.ilp'
+TEMP_DIR = '/run/media/julio/225e6802-f653-4336-bc7f-b87ab8f6600b/julio/DOPAVALUE/temp'
+ILASTIK_PATH = '/home/julio/Apps/ilastik-1.4.0-Linux/run_ilastik.sh'
+PROJECT_PATH = '/run/media/julio/225e6802-f653-4336-bc7f-b87ab8f6600b/julio/DOPAVALUE/training_images/DOPAVALUE_v1.ilp'
 # PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/Neuronal_death_v2.ilp'
 
 # Probability image is referring to channels in aip_image as follows:
 # (object_ch, prb_ch)
 object_ch_match = [(0, 0),
-                   (1, 1),
-                   (2, 2),
                    ]
-# object_ch_match = [(0, 0),
-#                    (1, 1),
-#                    ]
-ch_bg_match = [(0, 3),
-               (1, 3),
-               (2, 3)
+ch_bg_match = [(0, 1),
                ]
-# ch_bg_match = [(0, 2),
-#                (1, 2),
-#                ]
 
-ch_names = ['Microglie', 'Astrocyte', 'Neurone']
-# ch_names = ['Nuclei', 'Neurons_F1B']
+ch_names = ['Fibers']
 
 segmentation_thr = [180,
-                    100,
-                    180,
                     200]
-# segmentation_thr = [150,
-#                     100,
-#                     200]
 upper_correction_factors = [1,
-                            1,
-                            1,
                             1]
-# upper_correction_factors = [1,
-#                             1,
-#                             1]
 lower_correction_factors = [0.8,
-                            0.8,
-                            0.8,
                             1]
-# lower_correction_factors = [0.8,
-#                             0.2,
-#                             1]
 
 
 def run_ilastik(ilastik_path, input_path, model_path):
@@ -71,10 +45,29 @@ def run_ilastik(ilastik_path, input_path, model_path):
            '--headless',
            f'--project={model_path}',
            '--export_source=Probabilities',
+           '--output_format=tiff',
+           # '--output_filename_format={dataset_dir}/{nickname}_Probabilities.npy',
+           '--export_dtype=uint8',
+           '--output_axis_order=zctyx',
+           input_path]
+    try:
+        subprocess.run(cmd, check=True, stdout=subprocess.PIPE).stdout
+    except subprocess.CalledProcessError as e:
+        print(f'Input command: {cmd}')
+        print()
+        print(f'Error: {e.output}')
+        print()
+        print(f'Command: {e.cmd}')
+        print()
+
+    cmd = [ilastik_path,
+           '--headless',
+           f'--project={model_path}',
+           '--export_source=Probabilities',
            '--output_format=numpy',
            # '--output_filename_format={dataset_dir}/{nickname}_Probabilities.npy',
            '--export_dtype=uint8',
-           # '--output_axis_order=zctyx',
+           '--output_axis_order=zctyx',
            input_path]
     try:
         subprocess.run(cmd, check=True, stdout=subprocess.PIPE).stdout
@@ -178,7 +171,7 @@ if __name__ == '__main__':
                                      password=getpass("OMERO Password: ", None),
                                      host=str(input('server (omero.mri.cnrs.fr): ') or HOST),
                                      port=int(input('port (4064): ') or PORT),
-                                     group=input("Group: "))
+                                     group=str(input("Group (DOPAVALUE): ") or "DOPAVALUE"))
 
         # get tagged images in dataset
         dataset_id = int(input('Dataset ID: '))
@@ -199,11 +192,12 @@ if __name__ == '__main__':
 
         table_col_names = ['image_id',
                            'image_name',
-                           'mouse_nr',
-                           'replica_nr',
-                           'genotype',
-                           'treatment',
-                           'roi_area']
+                           'mouse_id',
+                           'AP',
+                           'section_nr',
+                           'date',
+                           'magnification',
+                           'markers',]
 
         for ch_name in ch_names:
             table_col_names.extend([f'roi_intensity_{ch_name}',
@@ -231,16 +225,18 @@ if __name__ == '__main__':
             name_md = image_root_name.strip()
             name_md = name_md.replace(' ', '_').split('_')
 
-            table_col_values[0].append(aip_image)  # 'image_id'
-            table_col_values[1].append(image_root_name)  # 'image_name'
-            table_col_values[2].append(name_md[0])  # 'mouse_nr'
-            table_col_values[3].append(name_md[1])  # 'replica_nr'
-            table_col_values[4].append(name_md[2])  # 'genotype'
-            table_col_values[5].append(name_md[3])  # 'treatment'
+            table_col_values[0].append(aip_image)  # image_id
+            table_col_values[1].append(image_root_name)  # image_name
+            table_col_values[2].append(name_md[0])  # mouse_id
+            table_col_values[3].append(name_md[1])  # AP
+            table_col_values[4].append(name_md[2])  # section_nr
+            table_col_values[5].append(name_md[3])  # date
+            table_col_values[6].append(name_md[4])  # magnification
+            table_col_values[7].append(name_md[5])  # markers
 
             # Some basic measurements
             roi_area = np.count_nonzero(aip_data[0, 0, 0, ...])
-            table_col_values[6].append(roi_area)  # 'roi_area'
+            table_col_values[8].append(roi_area)  # 'roi_area'
 
             # We were downloading the images without the z dimension so we have to remove it here
             # mip_data = mip_data.squeeze(axis=0)
@@ -254,17 +250,19 @@ if __name__ == '__main__':
             prob_data = np.load(output_file)
 
             # Save the output back to OMERO
-            omero.create_image_from_numpy_array(connection=conn,
-                                                data=prob_data,
-                                                image_name=f'{mip_image.getName()}_PROB',
-                                                image_description=f'Source Image ID:{mip_image.getId()}',
-                                                dataset=new_dataset,
-                                                channel_labels=ch_names + ['background'],
-                                                force_whole_planes=False
-                                                )
+            # omero.create_image_from_numpy_array(connection=conn,
+            #                                     data=prob_data,
+            #                                     image_name=f'{mip_image.getName()}_PROB',
+            #                                     image_description=f'Source Image ID:{mip_image.getId()}',
+            #                                     dataset=new_dataset,
+            #                                     channel_labels=ch_names + ['background'],
+            #                                     force_whole_planes=False,
+            #                                     )
 
             prob_data = prob_data.squeeze()
             aip_data = aip_data.squeeze()
+            if len(aip_data.shape) == 2:
+                aip_data = np.expand_dims(aip_data, axis=0)
 
             for object_ch, bg_ch in zip(object_ch_match, ch_bg_match):
                 # Keep connection alive
