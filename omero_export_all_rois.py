@@ -6,10 +6,10 @@ from skimage import draw
 
 
 # Define variables
-USER = sys.argv[1]
-PASS = sys.argv[2]
-GROUP = sys.argv[3]
-DATASET = sys.argv[4]
+USER = input("username: ") if len(sys.argv) < 2 else sys.argv[1]
+PASS = getpass("password: ") if len(sys.argv) < 3 else sys.argv[2]
+GROUP = input("group: ") if len(sys.argv) < 4 else sys.argv[3]
+DATASET = input("dataset ID: ") if len(sys.argv) < 5 else sys.argv[4]
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
 ROI_COMMENTS = ("core-i", "core-ni", "Lsh-i", "Lsh-ni", "Msh-i", "Msh-ni",)

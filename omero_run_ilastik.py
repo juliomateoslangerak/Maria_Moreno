@@ -190,14 +190,17 @@ if __name__ == '__main__':
         images_names_ids = {i.getName(): i.getId() for i in images}
         image_root_names = list(set([n[:-4] for n in images_names_ids.keys()]))
 
-        table_col_names = ['image_id',
-                           'image_name',
-                           'mouse_id',
-                           'AP',
-                           'section_nr',
-                           'date',
-                           'magnification',
-                           'markers',]
+        table_col_names = [
+            'image_id',
+            'image_name',
+            'mouse_id',
+            'AP',
+            'section_nr',
+            'date',
+            'magnification',
+            'markers',
+            'roi_area',
+        ]
 
         for ch_name in ch_names:
             table_col_names.extend([f'roi_intensity_{ch_name}',
@@ -215,6 +218,8 @@ if __name__ == '__main__':
 
         for counter, image_root_name in enumerate(image_root_names):
             logger.info(f'Analyzing image {image_root_name}')
+            # if image_root_name == "mouse-88770_anterior1-2_section1_04112024_20x_dapi-GFPtagged-THcy3-cfoscy5-Stitching-21-OME_trunc_.ome.tiff_Lsh-i":
+            #     continue
 
             mip_image = conn.getObject('Image', images_names_ids[f'{image_root_name}_MIP'])
             mip_data = omero.get_intensities(mip_image)
@@ -249,15 +254,18 @@ if __name__ == '__main__':
             output_file = f'{TEMP_DIR}/{mip_image.getName()}_Probabilities.npy'
             prob_data = np.load(output_file)
 
-            # Save the output back to OMERO
-            # omero.create_image_from_numpy_array(connection=conn,
-            #                                     data=prob_data,
-            #                                     image_name=f'{mip_image.getName()}_PROB',
-            #                                     image_description=f'Source Image ID:{mip_image.getId()}',
-            #                                     dataset=new_dataset,
-            #                                     channel_labels=ch_names + ['background'],
-            #                                     force_whole_planes=False,
-            #                                     )
+            try:
+                # Save the output back to OMERO
+                omero.create_image_from_numpy_array(connection=conn,
+                                                    data=prob_data,
+                                                    image_name=f'{mip_image.getName()}_PROB',
+                                                    image_description=f'Source Image ID:{mip_image.getId()}',
+                                                    dataset=new_dataset,
+                                                    channel_labels=ch_names + ['background'],
+                                                    force_whole_planes=False,
+                                                    )
+            except Exception as e:
+                logger.error(f'Error saving image {mip_image.getName()}_PROB: {e}')
 
             prob_data = prob_data.squeeze()
             aip_data = aip_data.squeeze()
@@ -322,6 +330,9 @@ if __name__ == '__main__':
                     table_col_values[table_col_names.index(f'mean_intensity_bg_{ch_names[object_ch[0]]}')].append(0)
 
             logger.info(f'Processed image {counter}')
+
+        # Create a table annotation with the results also as a pandas dataframe
+        dataframe = pd.DataFrame(table_col_values, index=table_col_names).T
 
         table = omero.create_annotation_table(connection=conn,
                                               table_name='Aggregated_measurements',

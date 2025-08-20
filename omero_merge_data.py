@@ -13,21 +13,15 @@ logger = logging.getLogger(__name__)
 # Define variables
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-TEMP_DIR = '/run/media/julio/DATA/Maria/temp'
+TEMP_DIR = '/run/media/julio/225e6802-f653-4336-bc7f-b87ab8f6600b/julio/DOPAVALUE/temp'
 
 # Probability image is referring to channels in aip_image as follows:
 # (object_ch, prb_ch)
 object_ch_match = [(0, 0),
-                   (1, 1),
-                   # (2, 2),
                    ]
-# ch_bg_match = [(0, 3),
-#                (1, 3),
-#                (2, 3)]
-ch_bg_match = [(0, 2),
-               (1, 2),
+ch_bg_match = [(0, 1),
                ]
-ch_names = ['Nuclei', 'Neurons_F1B']
+ch_names = ['Fibers']
 
 
 def omero_table_from_df(dataframe):
@@ -37,11 +31,11 @@ def omero_table_from_df(dataframe):
 if __name__ == '__main__':
     try:
         # Open the connection to OMERO
-        conn = omero.open_connection(username=input("Username: "),
+        conn = omero.open_connection(username=str(input("Username (mateos): ") or 'mateos'),
                                      password=getpass("OMERO Password: ", None),
                                      host=str(input('server (omero.mri.cnrs.fr): ') or HOST),
                                      port=int(input('port (4064): ') or PORT),
-                                     group=input("Group: "))
+                                     group=str(input("Group: ") or 'DOPAVALUE'))
 
         # get tagged images in dataset
         dataset_id = int(input('ROIs Dataset ID: '))
@@ -53,10 +47,12 @@ if __name__ == '__main__':
 
         table_col_names = ['image_id',
                            'image_name',
-                           'mouse_nr',
-                           'replica_nr',
-                           'genotype',
-                           'treatment',
+                           'mouse_id',
+                           'AP',
+                           'section_nr',
+                           'date',
+                           'magnification',
+                           'markers',
                            'roi_area']
 
         for ch_name in ch_names:
@@ -79,7 +75,7 @@ if __name__ == '__main__':
 
             image = conn.getObject('Image', images_names_ids[f'{image_root_name}_AIP'])
             # aip_data = omero.get_intensities(image)
-            aip_data = np.load(str(os.path.join(TEMP_DIR, str(dataset_id), f'{image_root_name}.npy')))
+            aip_data = np.load(str(os.path.join(TEMP_DIR, f'{image_root_name}_MIP.npy')))
             aip_data = np.squeeze(aip_data)
 
             # Filling data table
@@ -90,13 +86,15 @@ if __name__ == '__main__':
 
             im_table['image_id'] = [image.getId()]
             im_table['image_name'] = [image_root_name]
-            im_table['mouse_nr'] = [name_md[0]]
-            im_table['replica_nr'] = [name_md[1]]
-            im_table['genotype'] = [name_md[2]]
-            im_table['treatment'] = [name_md[3]]
+            im_table['mouse_id'] = [name_md[0]]
+            im_table['AP'] = [name_md[1]]
+            im_table['section_nr'] = [name_md[2]]
+            im_table['date'] = [name_md[3]]
+            im_table['magnification'] = [name_md[4]]
+            im_table['markers'] = [name_md[5]]
 
             # Some basic measurements
-            roi_area = np.count_nonzero(aip_data[0])
+            roi_area = np.count_nonzero(aip_data)
             im_table['roi_area'] = [roi_area]
 
             object_dfs = [None for _ in range(len(ch_names))]
@@ -108,8 +106,11 @@ if __name__ == '__main__':
                 if isinstance(ann, FileAnnotationWrapper):
                     file_name = ann.getFileName()
 
-                    local_file_path = os.path.join(TEMP_DIR, str(dataset_id),
+                    local_file_path = os.path.join(TEMP_DIR,
                                                    f'{image.getId()}_{image_root_name}_{file_name}')
+                    with open(local_file_path, 'wb') as f:
+                        for chunk in ann.getFileInChunks():
+                            f.write(chunk)
 
                     if 'object_df' in file_name:
                         object_dfs[int(file_name[2])] = pd.read_csv(local_file_path)
@@ -142,7 +143,7 @@ if __name__ == '__main__':
                 im_table[f'mean_intensity_bg_{ch_names[ch]}'] = bg_df['integrated_intensity'].sum() / \
                                                                 bg_df['area'].sum()
 
-                    logger.warning(f'No {ch_names[ch]} were detected for image {image_root_name}')
+                logger.warning(f'No {ch_names[ch]} were detected for image {image_root_name}')
 
             table = table.append(im_table)
 
