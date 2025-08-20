@@ -129,7 +129,10 @@ def get_pixel_size(image, order='ZXY'):
         raise ValueError('The provided order for the axis is not valid')
     pixel_sizes = tuple()
     for a in order:
-        pixel_sizes += (getattr(pixels, f'getPhysicalSize{a}')().getValue(), )
+        try:
+            pixel_sizes += (getattr(pixels, f'getPhysicalSize{a}')().getValue(), )
+        except AttributeError:
+            pixel_sizes += (1.0, )  # If the pixel size is not set, we return the unit value as 1.0
     return pixel_sizes
 
 
@@ -400,7 +403,7 @@ def create_image_from_numpy_array(connection,
                                   channels_list=None,
                                   force_whole_planes=False):
     """
-    Creates a new image in OMERO from a n dimensional numpy array.
+    Creates a new image in OMERO from a ndarray.
     :param channel_labels:
     :param force_whole_planes:
     :param channels_list:
