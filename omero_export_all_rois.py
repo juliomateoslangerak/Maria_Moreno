@@ -66,7 +66,7 @@ try:
                                                 image_description=f'Source Image ID:{image.getId()}',
                                                 dataset=new_dataset,
                                                 source_image_id=image.getId(),
-                                                force_whole_planes=True)
+                                                force_whole_planes=False)
 
             omero.create_image_from_numpy_array(connection=conn,
                                                 data=aip_data,
@@ -74,7 +74,7 @@ try:
                                                 image_description=f'Source Image ID:{image.getId()}',
                                                 dataset=new_dataset,
                                                 source_image_id=image.getId(),
-                                                force_whole_planes=True)
+                                                force_whole_planes=False)
 
         print(f'Processed image {counter}')
 
