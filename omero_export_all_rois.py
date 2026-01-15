@@ -12,8 +12,8 @@ GROUP = input("group: ") if len(sys.argv) < 4 else sys.argv[3]
 DATASET = input("dataset ID: ") if len(sys.argv) < 5 else sys.argv[4]
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-ROI_COMMENTS = ("core-i", "core-ni", "Lsh-i", "Lsh-ni", "Msh-i", "Msh-ni",)
-# ROI_COMMENTS = None
+# ROI_COMMENTS = ("core-i", "core-ni", "Lsh-i", "Lsh-ni", "Msh-i", "Msh-ni",)
+ROI_COMMENTS = None
 
 
 try:
