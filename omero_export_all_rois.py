@@ -13,7 +13,9 @@ DATASET = input("dataset ID: ") if len(sys.argv) < 5 else sys.argv[4]
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
 # ROI_COMMENTS = ("core-i", "core-ni", "Lsh-i", "Lsh-ni", "Msh-i", "Msh-ni",)
-ROI_COMMENTS = None
+ROI_COMMENTS = ("ibla", "ila", "nibla", "nila")
+# ROI_COMMENTS = None
+C_RANGE = None
 
 
 try:
@@ -54,7 +56,7 @@ try:
                 shape_comment = None
             if roi_filter is not None and shape_comment not in roi_filter:
                 continue
-            data = omero.get_shape_intensities(image, shape, zero_edge=True, zero_value="zero")
+            data = omero.get_shape_intensities(image, shape, c_range=C_RANGE, zero_edge=True, zero_value="zero")
             mip_data = data.max(axis=0, keepdims=True)
             aip_data = data.mean(axis=0, keepdims=True)
             aip_data = aip_data.astype(data.dtype)
