@@ -11,32 +11,63 @@ from skimage.morphology import closing, cube, disk
 
 import pandas as pd
 
-logging.basicConfig(level='INFO')
+# Suppress ilastik logging
+logging.getLogger('ilastik').setLevel(logging.ERROR)
+logging.getLogger('lazyflow').setLevel(logging.ERROR)
+logging.getLogger('opConservationTracking').setLevel(logging.ERROR)
+logging.getLogger('omero').setLevel(logging.WARNING)
+
+logging.basicConfig(
+    level='ERROR',
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('omero_run.log'),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 # Define variables
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-TEMP_DIR = '/run/media/julio/225e6802-f653-4336-bc7f-b87ab8f6600b/julio/DOPAVALUE/temp'
-ILASTIK_PATH = '/home/julio/Apps/ilastik-1.4.0-Linux/run_ilastik.sh'
-PROJECT_PATH = '/run/media/julio/225e6802-f653-4336-bc7f-b87ab8f6600b/julio/DOPAVALUE/training_images/DOPAVALUE_v1.ilp'
-# PROJECT_PATH = '/run/media/julio/DATA/Maria/projects/Neuronal_death_v2.ilp'
+TEMP_DIR = '/run/media/julio/DATA/DOPAVALUE/temp'
+ILASTIK_PATH = '/home/julio/Apps/ilastik-1.4.0.post1-Linux/run_ilastik.sh'
+PROJECT_PATH = '/run/media/julio/DATA/DOPAVALUE/training_images/DOPAVALUE_v2.ilp'
 
 # Probability image is referring to channels in aip_image as follows:
 # (object_ch, prb_ch)
-object_ch_match = [(0, 0),
-                   ]
-ch_bg_match = [(0, 1),
-               ]
+object_ch_match = [
+    (1, 0),
+]
+ch_bg_match = [
+    (1, 1),
+]
 
-ch_names = ['Fibers']
+ch_names = [
+    "DAPI",
+    "EGFP",
+    "DsRed",
+    "Cy5"
+]
 
-segmentation_thr = [180,
-                    200]
-upper_correction_factors = [1,
-                            1]
-lower_correction_factors = [0.8,
-                            1]
+segmentation_thr = [
+    180,
+    180,
+    180,
+    180,
+]
+upper_correction_factors = [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+]
+lower_correction_factors = [
+    1.0,
+    0.8,
+    1.0,
+    1.0,
+]
 
 
 def run_ilastik(ilastik_path, input_path, model_path):
@@ -51,7 +82,7 @@ def run_ilastik(ilastik_path, input_path, model_path):
            '--output_axis_order=zctyx',
            input_path]
     try:
-        subprocess.run(cmd, check=True, stdout=subprocess.PIPE).stdout
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
         print(f'Input command: {cmd}')
         print()
@@ -70,7 +101,7 @@ def run_ilastik(ilastik_path, input_path, model_path):
            '--output_axis_order=zctyx',
            input_path]
     try:
-        subprocess.run(cmd, check=True, stdout=subprocess.PIPE).stdout
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
         print(f'Input command: {cmd}')
         print()
@@ -80,7 +111,14 @@ def run_ilastik(ilastik_path, input_path, model_path):
         print()
 
 
-def segment_channel(channel, threshold=None, min_distance=2, remove_border=False, low_corr_factor=1, high_corr_factor=1):
+def segment_channel(
+    channel,
+    threshold=None,
+    min_distance=2,
+    remove_border=False,
+    low_corr_factor=1.0,
+    high_corr_factor=1.0
+):
     """Segment a channel (3D numpy array)
     """
     if threshold is None:
@@ -97,10 +135,12 @@ def segment_channel(channel, threshold=None, min_distance=2, remove_border=False
     return label(thresholded)
 
 
-def segment_image(image,
-                  thresholds=None,
-                  low_corr_factors=None,
-                  high_corr_factors=None):
+def segment_image(
+    image,
+    thresholds=None,
+    low_corr_factors=None,
+    high_corr_factors=None
+):
     """Segment an image and return a labels object.
     Image must be provided as cyx numpy array
     """
@@ -129,25 +169,23 @@ def segment_image(image,
 def compute_channel_spots_properties(channel, label_channel):
     """Analyzes and extracts the properties of a single channel"""
 
-    ch_properties = []
-    logger.info(f'label_channel dims: {label_channel.shape}')
-    logger.info(f'channel dims: {channel.shape}')
     regions = regionprops(label_channel, channel)
 
-    for region in regions:
-        ch_properties.append({'label': region.label,
-                              'area': region.area,
-                              'centroid_x': region.centroid[1],
-                              'centroid_y': region.centroid[0],
-                              'eccentricity': region.eccentricity,
-                              'perimeter': region.perimeter,
-                              'max_intensity': region.max_intensity,
-                              'mean_intensity': region.mean_intensity,
-                              'min_intensity': region.min_intensity,
-                              'integrated_intensity': region.mean_intensity * region.area
-                              })
-
-    return ch_properties
+    return [
+        {
+            'label': region.label,
+            'area': region.area,
+            'centroid_x': region.centroid[1],
+            'centroid_y': region.centroid[0],
+            'eccentricity': region.eccentricity,
+            'perimeter': region.perimeter,
+            'max_intensity': region.max_intensity,
+            'mean_intensity': region.mean_intensity,
+            'min_intensity': region.min_intensity,
+            'integrated_intensity': region.mean_intensity * region.area,
+        }
+        for region in regions
+    ]
 
 
 def compute_spots_properties(image, labels):
@@ -218,13 +256,21 @@ if __name__ == '__main__':
 
         for counter, image_root_name in enumerate(image_root_names):
             logger.info(f'Analyzing image {image_root_name}')
-            # if image_root_name == "mouse-88770_anterior1-2_section1_04112024_20x_dapi-GFPtagged-THcy3-cfoscy5-Stitching-21-OME_trunc_.ome.tiff_Lsh-i":
-            #     continue
 
-            mip_image = conn.getObject('Image', images_names_ids[f'{image_root_name}_MIP'])
-            mip_data = omero.get_intensities(mip_image)
-            aip_image = conn.getObject('Image', images_names_ids[f'{image_root_name}_AIP'])
-            aip_data = omero.get_intensities(aip_image)
+            try:
+                mip_image = conn.getObject('Image', images_names_ids[f'{image_root_name}_MIP'])
+                mip_data = omero.get_intensities(mip_image)
+                mip_data = mip_data[:, 1, ...]
+                mip_data = np.expand_dims(mip_data, axis=1)
+                # mip_data = omero.get_intensities(mip_image, c_range=1)
+                aip_image = conn.getObject('Image', images_names_ids[f'{image_root_name}_AIP'])
+                aip_data = omero.get_intensities(aip_image)
+                # aip_data = aip_data[:, 1, ...]
+                # aip_data = np.expand_dims(aip_data, axis=1)
+                # aip_data = omero.get_intensities(aip_image, c_range=1)
+            except Exception as e:
+                logger.error(f"could not get data for image {image_root_name}")
+                continue
 
             # Filling data table
             name_md = image_root_name.strip()
@@ -245,7 +291,6 @@ if __name__ == '__main__':
 
             # We were downloading the images without the z dimension so we have to remove it here
             # mip_data = mip_data.squeeze(axis=0)
-
             temp_file = f'{TEMP_DIR}/{mip_image.getName()}.npy'
             np.save(temp_file, mip_data)
 
@@ -330,6 +375,10 @@ if __name__ == '__main__':
                     table_col_values[table_col_names.index(f'mean_intensity_bg_{ch_names[object_ch[0]]}')].append(0)
 
             logger.info(f'Processed image {counter}')
+
+        # Remove empty columns
+        table_col_names = [col_name for col_name, col_values in zip(table_col_names, table_col_values) if len(col_values) > 0]
+        table_col_values = [col_values for col_values in table_col_values if len(col_values) > 0]
 
         # Create a table annotation with the results also as a pandas dataframe
         dataframe = pd.DataFrame(table_col_values, index=table_col_names).T
