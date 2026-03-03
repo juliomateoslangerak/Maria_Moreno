@@ -9,6 +9,7 @@ OUTPUT_DIR = '/run/media/julio/DATA/DOPAVALUE/training_images'
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
 ROI_COMMENTS = ['training']
+channel = 0
 
 
 # Helper functions
@@ -54,9 +55,11 @@ def run_script():
                 shape_id = roi.getId()._val
                 if shape_comment not in ROI_COMMENTS:
                     continue
-                data = omero.get_shape_intensities(image, shape)
-                # Do a MIP
+                data = omero.get_shape_intensities(image, shape, zero_edge=True)
+                # Do a MIP. Data in order zctyx
                 data = data.max(axis=0, keepdims=True)
+                data = data[:, channel, ...]
+                data = np.expand_dims(data, axis=1)
 
                 file_name = f'{OUTPUT_DIR}/{image.getName()}_ROI_label-{shape_comment}_id-{shape_id}.npy'
                 np.save(file_name, data)
