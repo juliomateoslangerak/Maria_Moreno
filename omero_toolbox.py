@@ -235,20 +235,20 @@ def _get_planes(image, ranges):
     return intensities
 
 
-def get_shape_intensities(image, shape, zero_edge=False, zero_value="zero"):
+def get_shape_intensities(image, shape, z_range=None, c_range=None, t_range=None, zero_edge=False, zero_value="zero"):
     """Returns a numpy array containing the raw intensities within the ROI"""
     # TODO: check on time and z binding. For the moment we are cutting through all z and t
     if isinstance(shape, model.RectangleI):
-        data = _get_rectangle_intensities(image, shape)
+        data = _get_rectangle_intensities(image, shape, z_range=z_range, c_range=c_range, t_range=t_range)
     elif isinstance(shape, model.PolygonI):
-        data = _get_polygon_intensities(image, shape, zero_edge=zero_edge, zero_value=zero_value)
+        data = _get_polygon_intensities(image, shape, z_range=z_range, c_range=c_range, t_range=t_range, zero_edge=zero_edge, zero_value=zero_value)
     else:
         raise NotImplementedError("only getting rectangle and polygone shape intensities")
 
     return data
 
 
-def _get_rectangle_intensities(image, shape):
+def _get_rectangle_intensities(image, shape, z_range, c_range, t_range):
     # Marking ROIs in GUI may render some coordinates out of bounds
     shape_x_pos = max(0, int(shape.getX()._val))
     shape_y_pos = max(0, int(shape.getY()._val))
@@ -263,10 +263,10 @@ def _get_rectangle_intensities(image, shape):
 
     x_range = (shape_x_pos, (shape_x_pos + shape_x_size))
     y_range = (shape_y_pos, (shape_y_pos + shape_y_size))
-    return get_intensities(image=image, x_range=x_range, y_range=y_range)
+    return get_intensities(image=image, z_range=z_range, c_range=c_range, t_range=t_range, x_range=x_range, y_range=y_range)
 
 
-def _get_polygon_intensities(image, shape, zero_edge, zero_value):
+def _get_polygon_intensities(image, shape, z_range, c_range, t_range, zero_edge, zero_value):
     # We max cause marking ROIs in GUI may render some coordinates negative
     shape_points = shape.getPoints()._val
     shape_points = [
@@ -290,7 +290,7 @@ def _get_polygon_intensities(image, shape, zero_edge, zero_value):
     x_range = (shape_x_pos, max(image_x_coords))
     y_range = (shape_y_pos, max(image_y_coords))
 
-    data = get_intensities(image=image, x_range=x_range, y_range=y_range)
+    data = get_intensities(image=image, z_range=z_range, c_range=c_range, t_range=t_range, x_range=x_range, y_range=y_range)
 
     if zero_edge:
         fill_y_coords, fill_x_coords = draw.polygon(shape_y_coors, shape_x_coors, data.shape[-2:])
@@ -434,8 +434,6 @@ def create_image_from_numpy_array(connection,
                                                        channelList=channels_list)
 
     else:
-        zct_tile_list = _get_tile_list(zct_list, data.shape, max_plane_size)
-
         if source_image_id is not None:
             new_image = create_image_copy(connection, source_image_id,
                                           image_name=image_name,
@@ -461,25 +459,56 @@ def create_image_from_numpy_array(connection,
         pixels_id = new_image.getPrimaryPixels().getId()
         raw_pixel_store.setPixelsId(pixels_id, True)
 
-        for tile_coord in zct_tile_list:
-            tile_data = data[tile_coord[0],
-                             tile_coord[1],
-                             tile_coord[2],
-                             tile_coord[3][1]:tile_coord[3][1] + tile_coord[3][3],
-                             tile_coord[3][0]:tile_coord[3][0] + tile_coord[3][2]]
-            tile_data = tile_data.byteswap()
-            bin_tile_data = tile_data.tostring()
+        try:
+            zct_tile_list = _get_tile_list(zct_list, data.shape, max_plane_size)
+            for t_i, tile_coord in enumerate(zct_tile_list):
+                # print(f"Uploading tile {t_i+1} / {len(zct_tile_list)}")
 
-            raw_pixel_store.setTile(bin_tile_data,
-                                    tile_coord[0],
-                                    tile_coord[1],
-                                    tile_coord[2],
-                                    tile_coord[3][0],
-                                    tile_coord[3][1],
-                                    tile_coord[3][2],
-                                    tile_coord[3][3],
-                                    connection.SERVICE_OPTS
-                                    )
+                tile_data = data[tile_coord[0],
+                                 tile_coord[1],
+                                 tile_coord[2],
+                                 tile_coord[3][1]:tile_coord[3][1] + tile_coord[3][3],
+                                 tile_coord[3][0]:tile_coord[3][0] + tile_coord[3][2]]
+                tile_data = tile_data.byteswap()
+                bin_tile_data = tile_data.tostring()
+                # print(f"bin_data length: {len(bin_tile_data)}")
+
+                raw_pixel_store.setTile(bin_tile_data,
+                                        tile_coord[0],
+                                        tile_coord[1],
+                                        tile_coord[2],
+                                        tile_coord[3][0],
+                                        tile_coord[3][1],
+                                        tile_coord[3][2],
+                                        tile_coord[3][3],
+                                        connection.SERVICE_OPTS
+                                        )
+
+        except Exception as e:
+            print(f"Error uploading roi:{new_image.getId()._val}")
+            zct_tile_list = _get_tile_list(zct_list, data.shape, (max_plane_size[0] * 2, 1))
+            for t_i, tile_coord in enumerate(zct_tile_list):
+                # print(f"Uploading tile {t_i+1} / {len(zct_tile_list)}")
+
+                tile_data = data[tile_coord[0],
+                                 tile_coord[1],
+                                 tile_coord[2],
+                                 tile_coord[3][1]:tile_coord[3][1] + tile_coord[3][3],
+                                 tile_coord[3][0]:tile_coord[3][0] + tile_coord[3][2]]
+                tile_data = tile_data.byteswap()
+                bin_tile_data = tile_data.tostring()
+                # print(f"bin_data length: {len(bin_tile_data)}")
+
+                raw_pixel_store.setTile(bin_tile_data,
+                                        tile_coord[0],
+                                        tile_coord[1],
+                                        tile_coord[2],
+                                        tile_coord[3][0],
+                                        tile_coord[3][1],
+                                        tile_coord[3][2],
+                                        tile_coord[3][3],
+                                        connection.SERVICE_OPTS
+                                        )
 
         if dataset is not None:
             link_image_to_dataset(connection, new_image, dataset)
