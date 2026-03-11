@@ -15,7 +15,7 @@ from skimage.transform import rescale
 username = "mateos"
 HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
-GROUP = "MRI-COMMUN"
+GROUP = "Demos life-SR"
 dataset_id = 29758
 # voxel_size = (100.0, 41.5, 41.5)  # Voxel size in nm (z, y, x)
 voxel_size = None
@@ -23,8 +23,8 @@ voxel_size = None
 z_size_override = None
 # rescale_z = False  # Whether to rescale z-axis to match x and y voxel sizes
 rescale_z = True
-# do_3D = False
-do_3D = True
+do_3D = False
+# do_3D = True
 
 from credentials import pw
 
@@ -228,7 +228,7 @@ def extract_profiles(
         img = np.frombuffer(canvas.tostring_argb(), dtype=np.uint8)
         img = img.reshape(canvas.get_width_height()[::-1] + (4,))
         # Resize to 400x400
-        img = np.array(Image.fromarray(img).resize((2048, 2048), Image.BILINEAR))
+        img = np.array(Image.fromarray(img))
 
         plt.close(fig)
 
@@ -383,7 +383,7 @@ try:
                             connection=conn,
                             data=zx_slice,
                             image_name=f"{image.getName()}_{shape_comment}_C{c_pos}_Z{z_pos}_zx",
-                            image_description=f"zx Orthogonal slice at Z={z_pos}, C={c_pos}, T={t_pos}. source imageid:{image.getId()}",
+                            image_description=f"zx Orthogonal slice at Z={z_pos}, C={c_pos}, T={t_pos}. source image:{image.getId()}",
                             # channel_labels=None,
                             dataset=dataset,
                             source_image_id=image.getId(),
