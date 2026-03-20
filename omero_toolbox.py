@@ -132,7 +132,7 @@ def get_pixel_size(image, order='ZXY'):
         try:
             pixel_sizes += (getattr(pixels, f'getPhysicalSize{a}')().getValue(), )
         except AttributeError:
-            pixel_sizes += (1.0, )  # If the pixel size is not set, we return the unit value as 1.0
+            pixel_sizes += (None, )  # If the pixel size is not set, we return the unit value as 1.0
     return pixel_sizes
 
 
