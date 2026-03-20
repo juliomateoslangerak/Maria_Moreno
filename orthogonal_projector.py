@@ -1,7 +1,7 @@
 from getpass import getpass
 
 import omero_toolbox as ot
-from omero.model import Point, Line
+from omero.model import Point, Line, Rectangle
 import numpy as np
 from scipy import special
 from scipy.optimize import curve_fit, fsolve
@@ -17,14 +17,14 @@ HOST = 'omero.mri.cnrs.fr'
 PORT = 4064
 GROUP = "Demos life-SR"
 dataset_id = 29758
-# voxel_size = (100.0, 41.5, 41.5)  # Voxel size in nm (z, y, x)
+# voxel_size = (100.0, 46.0, 46.0)  # Voxel size in nm (z, y, x)
 voxel_size = None
-# z_size_override = 0.100  # Voxel size in nm for z-axis
+# z_size_override = 0.10  # Voxel size in nm for z-axis
 z_size_override = None
 # rescale_z = False  # Whether to rescale z-axis to match x and y voxel sizes
 rescale_z = True
-do_3D = False
-# do_3D = True
+# do_3D = False
+do_3D = True
 
 from credentials import pw
 
@@ -48,9 +48,12 @@ def fit_gaussian(profile, guess=None):
     if guess is None:
         guess = [profile.min(), profile.max(), profile.argmax(), 0.8]
     x = np.linspace(0, profile.shape[0], profile.shape[0], endpoint=False)
-    popt, pcov, infodict, mesg, ier = curve_fit(
-        f=gaussian_fun, xdata=x, ydata=profile, p0=guess, maxfev=5000, full_output=True
-    )
+    try:
+        popt, pcov, infodict, mesg, ier = curve_fit(
+            f=gaussian_fun, xdata=x, ydata=profile, p0=guess, maxfev=5000, full_output=True
+        )
+    except RuntimeError:
+        return None, None, None, None
 
     if ier not in [1, 2, 3, 4]:
         print(f"No gaussian fit found. Reason: {mesg}")
@@ -115,6 +118,42 @@ def calculate_fwhm_raw(profile):
         return np.nan
 
     return indices[-1] - indices[0]
+
+def plot_bleaching(x, y, title, color, labels=None):
+    fig, ax = plt.subplots(figsize=(8, 4), dpi=100)
+    ax.plot(x, y, color=color)
+    ax.set_title(title)
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Intensity")
+    ax.set_ylim(bottom=0)
+
+    # Add labels if provided
+    if labels:
+        text_lines = [f"{k}: {v:.3f}" if isinstance(v, (float, int)) else f"{k}: {v}"
+                      for k, v in labels.items()]
+        text = "\n".join(text_lines)
+        ax.text(0.95, 0.95, text,
+                transform=ax.transAxes,
+                fontsize=9,
+                verticalalignment="top",
+                horizontalalignment="right",
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.7))
+
+    fig.tight_layout()
+
+    # Render figure to RGB array
+    canvas = FigureCanvas(fig)
+    canvas.draw()
+    img = np.frombuffer(canvas.tostring_argb(), dtype=np.uint8)
+    img = img.reshape(canvas.get_width_height()[::-1] + (4,))
+    img = np.array(Image.fromarray(img))
+
+    plt.close(fig)
+
+    img = np.transpose(img, (2, 0, 1))
+    img = img.reshape((1, 4, 1, img.shape[1], img.shape[2]))
+
+    return img
 
 
 def extract_profiles(
@@ -188,6 +227,9 @@ def extract_profiles(
     fit_y, cd_r2_y, fwhm_y, popt_y = fit_gaussian(profile_y)
     fit_x, cd_r2_x, fwhm_x, popt_x = fit_gaussian(profile_x)
 
+    if any(x is None for x in [fit_z, fit_y, fit_x, fwhm_z, fwhm_y, fwhm_x, cd_r2_z, cd_r2_y, cd_r2_x]):
+        return {}
+
     # correct the FWHM values to match the voxel size
     if do_3D:
         fwhm_z = fwhm_z * voxel_size[0]
@@ -231,6 +273,9 @@ def extract_profiles(
         img = np.array(Image.fromarray(img))
 
         plt.close(fig)
+
+        img = np.transpose(img, [2, 0, 1])
+        img = img.reshape((1, 4, 1, img.shape[1], img.shape[2]))
 
         return img
 
@@ -468,51 +513,110 @@ try:
                             do_3D=do_3D,
                         )
                         for axis, profile_img in profiles.items():
-                            # Convert to RGB for OMERO
-                            omero_rgb_profile = np.transpose(profile_img, (2, 0, 1))
-                            omero_rgb_profile = omero_rgb_profile.reshape(
-                                (1, 4, 1, omero_rgb_profile.shape[1], omero_rgb_profile.shape[2])
-                            )
                             profile_image = ot.create_image_from_numpy_array(
                                 connection=conn,
-                                data=omero_rgb_profile,
+                                data=profile_img,
                                 image_name=f"{image.getName()}_{shape_comment}_C{c_pos}_Z{z_pos}_{axis}_profile",
                                 image_description=f"Profile along {axis} axis at Z={z_pos}, C={c_pos}, T={t_pos}. source imageid:{image.getId()}",
                                 dataset=dataset,
                             )
                             profile_image.unload()
 
-            elif isinstance(shape, Line):
+            elif isinstance(shape, Rectangle):
                 try:
                     z_pos = shape.getTheZ()._val
                 except AttributeError:
                     z_pos = None
-                t_pos = 0  # Assuming time point is always 0, can be modified if needed
                 try:
                     c_pos = shape.getTheC()._val
                 except AttributeError:
                     c_pos = None
-                y_pos_1 = shape.getTheY1()._val
-                y_pos_2 = shape.getTheY2()._val
-                x_pos_1 = shape.getTheX1()._val
-                x_pos_2 = shape.getTheX2()._val
+                y_pos = shape.y._val
+                x_pos = shape.x._val
                 try:
                     shape_comment = shape.getTextValue()._val
                 except AttributeError:
-                    shape_comment = f"Line_at_{z_pos}_a-{y_pos_1:.2f}:{x_pos_1:.2f}_b-{y_pos_2:.2f}:{x_pos_2:.2f}"
-                if image_intensities is None:
-                    image_intensities = ot.get_intensities(image)
-                    # If we find a time lapse, this is probably the phases in the raw image, and we want to
-                    # average them
-                    if image_intensities.shape[2] > 1:
-                        image_intensities = np.mean(image_intensities, axis=2, keepdims=True)
-                    if image_intensities.min() < 0:
-                        image_intensities = np.clip(image_intensities, 0, None)
-                    if voxel_size is None:
-                        voxel_size = ot.get_pixel_size(image, order='zyx')
-                    if z_size_override is not None:
-                        voxel_size = (z_size_override, voxel_size[1], voxel_size[2])
+                    shape_comment = f"Rectangle_at_{z_pos}_{y_pos:.2f}:{x_pos:.2f}"
+                roi_intensities = ot.get_shape_intensities(
+                    image=image,
+                    shape=shape,
+                    c_range=c_pos,
+                    z_range=z_pos,
+                )
+                time_mean = np.mean(roi_intensities, axis=(0, 1, 3, 4))
+                time_max = np.max(roi_intensities, axis=(0, 1, 3, 4))
+                time_median = np.median(roi_intensities, axis=(0, 1, 3, 4))
+                plot_image_mean = plot_bleaching(
+                    x=np.arange(len(time_mean)),
+                    y=time_mean,
+                    title=f"{shape_comment}_C{c_pos}_Z{z_pos}_time_mean",
+                    color="red"
+                )
+                ot.create_image_from_numpy_array(
+                    connection=conn,
+                    data=plot_image_mean,
+                    image_name=f"{image.getName()}_{shape_comment}_C{c_pos}_Z{z_pos}_time_mean",
+                    image_description=f"Time mean profile along {shape_comment} at Z={z_pos}, C={c_pos}. source imageid:{image.getId()}",
+                    dataset=dataset,
+                )
+                plot_image_max = plot_bleaching(
+                    x=np.arange(len(time_max)),
+                    y=time_max,
+                    title=f"{shape_comment}_C{c_pos}_time_max",
+                    color="red"
+                )
+                ot.create_image_from_numpy_array(
+                    connection=conn,
+                    data=plot_image_max,
+                    image_name=f"{image.getName()}_{shape_comment}_C{c_pos}_time_max",
+                    image_description=f"Time max profile along {shape_comment} at Z={z_pos}, C={c_pos}. source imageid:{image.getId()}",
+                    dataset=dataset,
+                )
+                plot_image_median = plot_bleaching(
+                    x=np.arange(len(time_median)),
+                    y=time_median,
+                    title=f"{shape_comment}_C{c_pos}_time_median",
+                    color="red"
+                )
+                ot.create_image_from_numpy_array(
+                    connection=conn,
+                    data=plot_image_median,
+                    image_name=f"{image.getName()}_{shape_comment}_C{c_pos}_time_median",
+                    image_description=f"Time median profile along {shape_comment} at Z={z_pos}, C={c_pos}. source imageid:{image.getId()}",
+                    dataset=dataset,
+                )
 
+            # elif isinstance(shape, Line):
+            #     try:
+            #         z_pos = shape.getTheZ()._val
+            #     except AttributeError:
+            #         z_pos = None
+            #     t_pos = 0  # Assuming time point is always 0, can be modified if needed
+            #     try:
+            #         c_pos = shape.getTheC()._val
+            #     except AttributeError:
+            #         c_pos = None
+            #     y_pos_1 = shape.getTheY1()._val
+            #     y_pos_2 = shape.getTheY2()._val
+            #     x_pos_1 = shape.getTheX1()._val
+            #     x_pos_2 = shape.getTheX2()._val
+            #     try:
+            #         shape_comment = shape.getTextValue()._val
+            #     except AttributeError:
+            #         shape_comment = f"Line_at_{z_pos}_a-{y_pos_1:.2f}:{x_pos_1:.2f}_b-{y_pos_2:.2f}:{x_pos_2:.2f}"
+            #     if image_intensities is None:
+            #         image_intensities = ot.get_intensities(image)
+            #         # If we find a time lapse, this is probably the phases in the raw image, and we want to
+            #         # average them
+            #         if image_intensities.shape[2] > 1:
+            #             image_intensities = np.mean(image_intensities, axis=2, keepdims=True)
+            #         if image_intensities.min() < 0:
+            #             image_intensities = np.clip(image_intensities, 0, None)
+            #         if voxel_size is None:
+            #             voxel_size = ot.get_pixel_size(image, order='zyx')
+            #         if z_size_override is not None:
+            #             voxel_size = (z_size_override, voxel_size[1], voxel_size[2])
+            #
 
 
 finally:
