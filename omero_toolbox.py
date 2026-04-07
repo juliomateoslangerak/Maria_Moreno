@@ -62,13 +62,17 @@ COLUMN_TYPES = {'string': grid.StringColumn,
                 }
 
 
-def open_connection(username, password, host, port, group=None, secure=False):
+def open_connection(username, password, host, port, group=None, secure=True, keep_alive=None):
     conn = gw.BlitzGateway(username=username,
                            passwd=password,
                            host=host,
                            port=port,
                            group=group,
                            secure=secure)
+
+    if keep_alive is not None:
+        conn.c.enableKeepAlive(keep_alive)
+        
     try:
         conn.connect()
     except Exception as e:
@@ -228,13 +232,15 @@ def _get_planes(image, ranges):
     return intensities
 
 
-def get_shape_intensities(image, shape, zero_edge=False):
+def get_shape_intensities(image, shape, zero_edge=False, zero_value="zero"):
     """Returns a numpy array containing the raw intensities within the ROI"""
     # TODO: check on time and z binding. For the moment we are cutting through all z and t
     if isinstance(shape, model.RectangleI):
         data = _get_rectangle_intensities(image, shape)
     elif isinstance(shape, model.PolygonI):
         data = _get_polygon_intensities(image, shape, zero_edge=zero_edge)
+    else:
+        raise NotImplementedError("only getting rectangle and polygone shape intensities")
 
     return data
 
@@ -257,7 +263,7 @@ def _get_rectangle_intensities(image, shape):
     return get_intensities(image=image, x_range=x_range, y_range=y_range)
 
 
-def _get_polygon_intensities(image, shape, zero_edge):
+def _get_polygon_intensities(image, shape, zero_edge, zero_value):
     # We max cause marking ROIs in GUI may render some coordinates negative
     shape_points = shape.getPoints()._val
     shape_points = [
@@ -286,7 +292,11 @@ def _get_polygon_intensities(image, shape, zero_edge):
     if zero_edge:
         fill_y_coords, fill_x_coords = draw.polygon(shape_y_coors, shape_x_coors, data.shape[-2:])
 
-        masked_data = np.zeros(data.shape, dtype=data.dtype)
+        if zero_value == "zero":
+            masked_data = np.zeros(data.shape, dtype=data.dtype)
+        elif zero_value == "min":
+            masked_data = np.full(data.shape, fill_value=data.min())
+
         masked_data[..., fill_y_coords, fill_x_coords] = data[..., fill_y_coords, fill_x_coords]
 
         return masked_data
@@ -724,7 +734,7 @@ def _create_table(column_names, columns_descriptions, values, types=None):
         raise IndexError('Error creating table. Types and values lengths are not matching.')
     # TODO: Verify implementation of empty table creation
 
-    columns = list()
+    columns = []
     for i, (cn, cd, v) in enumerate(zip(column_names, columns_descriptions, values)):
         # Verify column names and descriptions are strings
         if not type(cn) == type(cd) == str:
@@ -733,11 +743,7 @@ def _create_table(column_names, columns_descriptions, values, types=None):
         if types is not None:
             v_type = types[i]
         else:
-            if isinstance(v[0], (list, tuple)):
-                v_type = [type(v[0][0])]
-            else:
-                v_type = type(v[0])
-
+            v_type = [type(v[0][0])] if isinstance(v[0], (list, tuple)) else type(v[0])
         # Verify that all elements in values are the same type
         # if not all(isinstance(x, v_type) for x in v):
         #     raise TypeError(f'Not all elements in column {cn} are of the same type')
@@ -747,24 +753,46 @@ def _create_table(column_names, columns_descriptions, values, types=None):
             args = {'name': cn, 'description': cd, 'size': size, 'values': v}
             columns.append(_create_column(data_type='string', kwargs=args))
         elif v_type == int:
-            args = {'name': cn, 'description': cd, 'values': v}
-            columns.append(_create_column(data_type='long', kwargs=args))
+            if cn.lower() in ["image", "imageid", "image id", "image_id"]:
+                args = {'name': cn, 'values': v}
+                columns.append(_create_column(data_type='image', kwargs=args))
+            elif cn.lower() in ["dataset", "datasetid", "dataset id", "dataset_id"]:
+                args = {'name': cn, 'values': v}
+                columns.append(_create_column(data_type='dataset', kwargs=args))
+            elif cn.lower() in ["plate", "plateid", "plate id", "plate_id"]:
+                args = {'name': cn, 'values': v}
+                columns.append(_create_column(data_type='plate', kwargs=args))
+            elif cn.lower() in ["well", "wellid", "well id", "well_id"]:
+                args = {'name': cn, 'values': v}
+                columns.append(_create_column(data_type='well', kwargs=args))
+            elif cn.lower() in ["roi", "roiid", "roi id", "roi_id"]:
+                args = {'name': cn, 'values': v}
+                columns.append(_create_column(data_type='roi', kwargs=args))
+            elif cn.lower() in ["mask", "maskid", "mask id", "mask_id"]:
+                args = {'name': cn, 'values': v}
+                columns.append(_create_column(data_type='mask', kwargs=args))
+            elif cn.lower() in ["file", "fileid", "file id", "file_id"]:
+                args = {'name': cn, 'values': v}
+                columns.append(_create_column(data_type='file', kwargs=args))
+            else:
+                args = {'name': cn, 'description': cd, 'values': v}
+                columns.append(_create_column(data_type='long', kwargs=args))
         elif v_type == float:
             args = {'name': cn, 'description': cd, 'values': v}
             columns.append(_create_column(data_type='double', kwargs=args))
         elif v_type == bool:
             args = {'name': cn, 'description': cd, 'values': v}
             columns.append(_create_column(data_type='string', kwargs=args))
-        elif v_type == gw.ImageWrapper or v_type == model.ImageI:
+        elif v_type in [gw.ImageWrapper, model.ImageI]:
             args = {'name': cn, 'description': cd, 'values': [img.getId() for img in v]}
             columns.append(_create_column(data_type='image', kwargs=args))
-        elif v_type == gw.RoiWrapper or v_type == model.RoiI:
+        elif v_type in [gw.RoiWrapper, model.RoiI]:
             args = {'name': cn, 'description': cd, 'values': [roi.getId() for roi in v]}
             columns.append(_create_column(data_type='roi', kwargs=args))
         elif isinstance(v_type, (list, tuple)):  # We are creating array columns
 
             # Verify that every element in the 'array' is the same length and type
-            if not all(len(x) == len(v[0]) for x in v):
+            if any(len(x) != len(v[0]) for x in v):
                 raise IndexError(f'Not all elements in column {cn} have the same length')
             if not all(all(isinstance(x, type(v[0][0])) for x in a) for a in v):
                 raise TypeError(f'Not all the elements in the array column {cn} are of the same type')
@@ -782,18 +810,20 @@ def _create_table(column_names, columns_descriptions, values, types=None):
     return columns
 
 
-def create_annotation_table(connection, table_name, column_names, column_descriptions, values, namespace=None, table_description=None):
+def create_annotation_table(connection, table_name, column_names, column_descriptions, values, types=None, namespace=None,
+                            table_description=None):
     """Creates a table annotation from a list of lists"""
 
     column_length = len(values[0])
     if any(len(l) != column_length for l in values):
         raise ValueError('The columns have different lengths')
 
-    table_name = f'{table_name}_{"".join([choice(ascii_letters) for n in range(32)])}.h5'
+    table_name = f'{table_name}_{"".join([choice(ascii_letters) for _ in range(32)])}.h5'
 
     columns = _create_table(column_names=column_names,
                             columns_descriptions=column_descriptions,
-                            values=values)
+                            values=values,
+                            types=types)
     resources = connection.c.sf.sharedResources()
     repository_id = resources.repositories().descriptions[0].getId().getValue()
     table = resources.newTable(repository_id, table_name)
@@ -949,7 +979,7 @@ def create_shape_polygon(points_list, z_pos, t_pos,
 
 def create_shape_mask(mask_array, x_pos, y_pos, z_pos, t_pos,
                       mask_name=None,
-                      fill_color=(10, 10, 10, 255)):
+                      fill_color=(0, 255, 0, 120)):
     mask = model.MaskI()
     mask.setX(rtypes.rdouble(x_pos))
     mask.setY(rtypes.rdouble(y_pos))
@@ -960,8 +990,10 @@ def create_shape_mask(mask_array, x_pos, y_pos, z_pos, t_pos,
     mask.setFillColor(rtypes.rint(_rgba_to_int(*fill_color)))
     if mask_name:
         mask.setTextValue(rtypes.rstring(mask_name))
-    mask_packed = np.packbits(mask_array)  # TODO: raise error when not boolean array
-    mask.setBytes(mask_packed.tobytes())
+    # mask_packed = np.packbits(mask_array)  # TODO: raise error when not boolean array
+    # mask.setBytes(mask_packed.tobytes())
+    # mask.setBytes(np.packbits(np.asarray(mask_array, dtype=int)))
+    mask.setBytes(np.packbits(mask_array))
 
     return mask
 
