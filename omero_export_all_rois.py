@@ -26,6 +26,7 @@ try:
                                  host=HOST,
                                  port=PORT,
                                  group=GROUP,
+                                 secure=True,
                                  keep_alive=60)
 
     dataset_id = int(DATASET)
